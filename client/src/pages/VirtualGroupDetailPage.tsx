@@ -182,8 +182,7 @@ export const VirtualGroupDetailPage: React.FC = () => {
     if (!id || !memberToRemove) return;
     try {
       setIsRemoving(true);
-      const targetId = memberToRemove.candidateId?._id || memberToRemove._id;
-      await removeGroupMember(id, targetId, removalReason);
+      await removeGroupMember(id, memberToRemove.candidateId._id, removalReason);
       setMemberToRemove(null);
       setRemovalReason('');
       fetchMembers();
@@ -218,21 +217,18 @@ export const VirtualGroupDetailPage: React.FC = () => {
   const handleExportCSV = () => {
     if (members.length === 0) return;
     const headers = ['Candidate ID', 'Full Name', 'Phone Number', 'Email', 'Branch', 'Degree', 'Passing Year', 'Placement Status', 'WhatsApp Consent', 'Assigned Date'];
-    const rows = members.map((m) => {
-      const cand = m.candidateId || ({} as any);
-      return [
-        `"${cand.candidateId || ''}"`,
-        `"${cand.fullName || m.studentName || ''}"`,
-        `"${cand.phoneNumber || m.phoneNumber || ''}"`,
-        `"${cand.email || ''}"`,
-        `"${cand.branch || ''}"`,
-        `"${cand.degree || ''}"`,
-        `"${cand.passingYear || ''}"`,
-        `"${cand.placementStatus || ''}"`,
-        `"${cand.whatsappConsent ? 'Consented' : 'No Consent'}"`,
-        `"${new Date(m.assignedAt).toLocaleDateString()}"`,
-      ];
-    });
+    const rows = members.map((m) => [
+      `"${m.candidateId.candidateId}"`,
+      `"${m.candidateId.fullName}"`,
+      `"${m.candidateId.phoneNumber}"`,
+      `"${m.candidateId.email || ''}"`,
+      `"${m.candidateId.branch || ''}"`,
+      `"${m.candidateId.degree || ''}"`,
+      `"${m.candidateId.passingYear || ''}"`,
+      `"${m.candidateId.placementStatus}"`,
+      `"${m.candidateId.whatsappConsent ? 'Consented' : 'No Consent'}"`,
+      `"${new Date(m.assignedAt).toLocaleDateString()}"`,
+    ]);
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
@@ -647,13 +643,7 @@ export const VirtualGroupDetailPage: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {members.map((m) => {
-                      const cand: any = m.candidateId || {
-                        _id: m._id,
-                        candidateId: 'N/A',
-                        fullName: m.studentName || 'Student',
-                        phoneNumber: m.phoneNumber || m.normalizedPhoneNumber || 'N/A',
-                        whatsappConsent: true,
-                      };
+                      const cand = m.candidateId;
                       return (
                         <tr key={m._id} className="hover:bg-slate-50/80 transition-colors">
                           <td className="py-3 px-4 whitespace-nowrap">
@@ -1000,7 +990,7 @@ export const VirtualGroupDetailPage: React.FC = () => {
             <p className="text-xs text-slate-600 leading-relaxed">
               Are you sure you want to remove{' '}
               <span className="font-semibold text-slate-900">
-                {memberToRemove.candidateId?.fullName || memberToRemove.studentName || 'Member'} ({memberToRemove.candidateId?.candidateId || memberToRemove.normalizedPhoneNumber || 'ID'})
+                {memberToRemove.candidateId.fullName} ({memberToRemove.candidateId.candidateId})
               </span>{' '}
               from this recruitment group? This will mark the membership as <em>Removed</em> while preserving
               historical audit tracking.

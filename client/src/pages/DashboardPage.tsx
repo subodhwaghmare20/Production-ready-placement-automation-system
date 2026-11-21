@@ -1,318 +1,271 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
-  FolderTree,
   Users,
+  Building2,
+  FolderTree,
   Send,
-  Plus,
+  Activity,
+  CheckCircle2,
+  Clock,
   ArrowRight,
-  RefreshCw,
+  ShieldCheck,
   AlertCircle,
-  Cloud,
+  RefreshCw,
 } from 'lucide-react';
+import { StatCard } from '../components/common/StatCard';
+import { checkApiHealth } from '../services/healthService';
 import { getDashboardStats } from '../services/dashboardService';
-import { DashboardStats } from '../types';
+import { HealthStatus, DashboardStats } from '../types';
 import { useAuth } from '../hooks/useAuth';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const [health, setHealth] = useState<HealthStatus | null>(null);
+  const [loadingHealth, setLoadingHealth] = useState(true);
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   const fetchStats = async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setLoadingStats(true);
+      setStatsError(null);
       const data = await getDashboardStats();
       setStats(data);
     } catch {
-      setError('Unable to load dashboard metrics. Please verify backend connection.');
+      setStatsError('Unable to load dashboard metrics from database.');
     } finally {
-      setLoading(false);
+      setLoadingStats(false);
     }
   };
 
   useEffect(() => {
+    checkApiHealth()
+      .then((data) => {
+        setHealth(data);
+        setLoadingHealth(false);
+      })
+      .catch(() => {
+        setHealth({ success: false, message: 'Could not connect to API server' });
+        setLoadingHealth(false);
+      });
+
     fetchStats();
   }, []);
 
-  const totalGroups = stats?.totalGroups ?? stats?.activeVirtualGroups ?? 0;
-  const totalStudents = stats?.totalStudentNumbers ?? stats?.totalCandidates ?? 0;
-  const totalSent = stats?.totalMessagesSent ?? stats?.messagesSent ?? 0;
-  const recentCampaigns = stats?.recentCampaigns || [];
-
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Top Welcome & Quick Actions Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
+    <div className="space-y-8">
+      {/* Top Welcome Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-            WhatsApp Bulk Messaging
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Welcome back, {user?.name || 'Admin'}
+            </h1>
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              Authenticated
+            </span>
+          </div>
           <p className="text-sm text-slate-500 mt-1">
-            Welcome, <span className="font-semibold text-slate-700">{user?.name || 'Administrator'}</span>. Manage groups, student contact numbers, and WhatsApp dispatches directly.
+            Real-time placement drive metrics and candidate automation status.
           </p>
         </div>
 
-        {/* Quick Action Shortcuts */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Link
-            to="/groups"
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Create Group
-          </Link>
-          <Link
-            to="/whatsapp-connection"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
-          >
-            <Cloud className="w-3.5 h-3.5 text-slate-500" />
-            WhatsApp Connection
-          </Link>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={fetchStats}
-            title="Refresh metrics"
-            className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            title="Refresh database metrics"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-xs text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loadingStats ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
           </button>
+
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-xs text-xs">
+            <Activity className="w-4 h-4 text-slate-500" />
+            <span className="text-slate-600 font-medium">API:</span>
+            {loadingHealth ? (
+              <span className="text-slate-400">Checking...</span>
+            ) : health?.success ? (
+              <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Online
+              </span>
+            ) : (
+              <span className="text-rose-600 font-semibold">Offline</span>
+            )}
+          </div>
         </div>
       </div>
 
-      {error && (
-        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-center justify-between">
+      {/* Error alert if stats fetch failed */}
+      {statsError && (
+        <div className="p-3.5 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-between text-xs text-amber-800">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>{error}</span>
+            <span>{statsError}</span>
           </div>
           <button
             onClick={fetchStats}
-            className="text-xs font-semibold text-amber-900 underline hover:no-underline cursor-pointer"
+            className="font-semibold underline hover:text-amber-900"
           >
-            Retry
+            Try Again
           </button>
         </div>
       )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* Card 1: Groups */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Total Groups
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <FolderTree className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-slate-900 font-mono">
-              {loading ? '...' : totalGroups}
-            </span>
-            <Link
-              to="/groups"
-              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+      {/* 4 Functional Stat Cards with Loading Skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {loadingStats ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm animate-pulse space-y-3"
             >
-              Manage <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">Company contact lists</p>
-        </div>
-
-        {/* Card 2: Students */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Registered Students
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Users className="w-5 h-5" />
+              <div className="h-3 bg-slate-200 rounded w-1/2" />
+              <div className="h-8 bg-slate-200 rounded w-1/3" />
+              <div className="h-2.5 bg-slate-100 rounded w-2/3" />
             </div>
-          </div>
-          <div className="mt-4 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-slate-900 font-mono">
-              {loading ? '...' : totalStudents}
-            </span>
-            <span className="text-xs font-bold text-blue-600">Mobile Numbers</span>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">Ready for individual messaging</p>
-        </div>
-
-        {/* Card 3: Messages Sent */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Total Messages Sent
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <Send className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-slate-900 font-mono">
-              {loading ? '...' : totalSent}
-            </span>
-            <span className="text-xs font-bold text-indigo-600">Delivered</span>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">Official Cloud API dispatches</p>
-        </div>
-
-        {/* Card 4: WhatsApp Gateway */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              WhatsApp Gateway
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <Cloud className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-baseline justify-between">
-            <span className="text-base font-extrabold text-emerald-700 flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-              Connected
-            </span>
-            <Link
-              to="/whatsapp-connection"
-              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
-            >
-              Settings <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">Meta Business Cloud API</p>
-        </div>
-      </div>
-
-      {/* Simplified 3-Step Flow Banner */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-100 shadow-xs">
-        <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider mb-3">
-          How to Send Bulk WhatsApp Messages
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-          <div className="bg-white/80 backdrop-blur-xs p-4 rounded-xl border border-emerald-100 flex items-start gap-3">
-            <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center shrink-0">
-              1
-            </span>
-            <div>
-              <span className="font-extrabold text-slate-900 text-sm block">Create Group</span>
-              <p className="text-slate-500 mt-1">
-                Enter your group name (e.g. TCS, Infosys, Wipro). Whatever name you give is the group & company.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white/80 backdrop-blur-xs p-4 rounded-xl border border-emerald-100 flex items-start gap-3">
-            <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center shrink-0">
-              2
-            </span>
-            <div>
-              <span className="font-extrabold text-slate-900 text-sm block">Add Mobile Numbers</span>
-              <p className="text-slate-500 mt-1">
-                Add numbers individually or paste in bulk from Excel or text files directly inside the group.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white/80 backdrop-blur-xs p-4 rounded-xl border border-emerald-100 flex items-start gap-3">
-            <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center shrink-0">
-              3
-            </span>
-            <div>
-              <span className="font-extrabold text-slate-900 text-sm block">Write & Send To All</span>
-              <p className="text-slate-500 mt-1">
-                Compose your message directly inside the group and click "SEND TO ALL" for automated individual delivery.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Dispatches Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Send className="w-4 h-4 text-emerald-600" />
-            <h2 className="text-base font-extrabold text-slate-900">Recent WhatsApp Dispatches</h2>
-          </div>
-          <Link
-            to="/groups"
-            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
-          >
-            View Groups <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {recentCampaigns.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-400">
-            No WhatsApp dispatches recorded yet. Open a group to send your first message!
-          </div>
+          ))
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/75 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                  <th className="py-3 px-5">Group / Dispatch Name</th>
-                  <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4 text-center">Recipients</th>
-                  <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                {recentCampaigns.map((camp: any) => {
-                  const gId = typeof camp.groupId === 'object' ? camp.groupId?._id : camp.groupId;
-                  return (
-                    <tr key={camp._id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-3 px-5 font-bold text-slate-900">
-                        {camp.name}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                            camp.status === 'COMPLETED'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : camp.status === 'IN_PROGRESS' || camp.status === 'RUNNING'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-slate-100 text-slate-800'
-                          }`}
-                        >
-                          {camp.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-center font-mono font-bold text-slate-800">
-                        {camp.metrics?.processedRecipients || camp.metrics?.eligibleRecipients || 0}
-                      </td>
-                      <td className="py-3 px-4 text-slate-400">
-                        {new Date(camp.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="py-3 px-5 text-right">
-                        {gId ? (
-                          <Link
-                            to={`/groups/${gId}`}
-                            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center justify-end gap-1"
-                          >
-                            Open Group <ArrowRight className="w-3.5 h-3.5" />
-                          </Link>
-                        ) : (
-                          <Link
-                            to={`/campaigns/${camp._id}`}
-                            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center justify-end gap-1"
-                          >
-                            View Tracker <ArrowRight className="w-3.5 h-3.5" />
-                          </Link>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <StatCard
+              title="Total Candidates"
+              value={stats?.totalCandidates ?? 0}
+              subtitle="Registered in MongoDB collection"
+              icon={Users}
+            />
+            <StatCard
+              title="Total Companies"
+              value={stats?.totalCompanies ?? 0}
+              subtitle="Visiting corporate partners"
+              icon={Building2}
+            />
+            <StatCard
+              title="Active Virtual Groups"
+              value={stats?.activeVirtualGroups ?? 0}
+              subtitle="Company-specific groups"
+              icon={FolderTree}
+            />
+            <StatCard
+              title="Messages Sent"
+              value={stats?.messagesSent ?? 0}
+              subtitle="Dispatched via messaging engine"
+              icon={Send}
+            />
+          </>
         )}
+      </div>
+
+      {/* Overview & Security Architecture Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Authenticated Session Card */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div>
+              <h2 className="text-base font-semibold text-slate-900">
+                Active Admin Session Profile
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Verified via HttpOnly JWT Cookie & Anti-CSRF Token
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Session Verified
+            </span>
+          </div>
+
+          <div className="mt-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                <span className="text-slate-400 font-medium">Logged-in Administrator</span>
+                <p className="font-semibold text-slate-900 text-sm">{user?.name}</p>
+                <p className="text-slate-600 font-mono">{user?.email}</p>
+              </div>
+
+              <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                <span className="text-slate-400 font-medium">Role & Account Status</span>
+                <p className="font-semibold text-slate-900 capitalize">{user?.role}</p>
+                <p className="text-emerald-600 font-medium">Active (Password Hashed with bcrypt)</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="flex items-center justify-between text-xs font-medium text-slate-700 mb-2">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Protected Stats Endpoint: GET /api/dashboard/stats
+                </span>
+                <span className="font-mono text-slate-500">200 OK</span>
+              </div>
+              <div className="font-mono text-xs bg-slate-900 text-slate-100 p-3 rounded-md overflow-x-auto">
+                {JSON.stringify(
+                  {
+                    success: true,
+                    data: stats || {
+                      totalCandidates: 0,
+                      totalCompanies: 0,
+                      activeVirtualGroups: 0,
+                      messagesSent: 0,
+                    },
+                  },
+                  null,
+                  2
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Project Roadmap Card */}
+        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 pb-4 border-b border-slate-100">
+              <Clock className="w-4 h-4 text-slate-500" />
+              <h2 className="text-base font-semibold text-slate-900">
+                Implementation Progress
+              </h2>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              <div className="p-3 rounded-lg border border-emerald-200 bg-emerald-50/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-800">Module 1 (Done)</span>
+                  <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded font-medium">Complete</span>
+                </div>
+                <p className="text-xs text-emerald-700 mt-1">
+                  Architecture initialization, navigation structure & health check.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg border border-emerald-300 bg-emerald-50/70">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-900">Module 2 (Current)</span>
+                  <span className="text-[10px] bg-emerald-700 text-white px-1.5 py-0.5 rounded font-medium">Active</span>
+                </div>
+                <p className="text-xs text-emerald-800 mt-1">
+                  JWT authentication, HttpOnly cookies, CSRF protection & live stats.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-700">Module 3</span>
+                  <span className="text-[10px] text-slate-400">Upcoming</span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Candidate & Company management schemas and CRUD operations.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-slate-100 text-xs text-slate-400 flex items-center justify-between">
+            <span>Awaiting Module 3 Approval</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
       </div>
     </div>
   );

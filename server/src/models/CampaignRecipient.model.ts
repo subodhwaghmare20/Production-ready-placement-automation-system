@@ -119,12 +119,12 @@ const campaignRecipientSchema = new Schema<ICampaignRecipient>(
     candidateId: {
       type: Schema.Types.ObjectId,
       ref: 'Candidate',
-      required: false,
+      required: true,
       index: true,
     },
     candidateName: {
       type: String,
-      default: 'Student',
+      required: true,
       trim: true,
     },
     phoneNumber: {

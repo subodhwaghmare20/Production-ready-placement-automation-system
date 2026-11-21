@@ -47,7 +47,6 @@ export interface ICampaign extends Document {
   templateId?: mongoose.Types.ObjectId;
   metaTemplateId?: mongoose.Types.ObjectId;
   metaTemplateName?: string;
-  messageType?: 'TEMPLATE' | 'TEXT';
   messageTemplateContent: string;
   provider: 'PERSONAL_ASSISTED' | 'CLOUD_API';
   status: CampaignStatus;
@@ -99,11 +98,6 @@ const campaignSchema = new Schema<ICampaign>(
     metaTemplateName: {
       type: String,
       trim: true,
-    },
-    messageType: {
-      type: String,
-      enum: ['TEMPLATE', 'TEXT'],
-      default: 'TEMPLATE',
     },
     messageTemplateContent: {
       type: String,
@@ -179,5 +173,3 @@ const campaignSchema = new Schema<ICampaign>(
 );
 
 export const Campaign = mongoose.model<ICampaign>('Campaign', campaignSchema);
-export const MessageCampaign = Campaign;
-export type IMessageCampaign = ICampaign;

@@ -16,7 +16,6 @@ export interface CreateCampaignRequest {
   metaTemplateId?: string;
   metaTemplateName?: string;
   provider?: 'PERSONAL_ASSISTED' | 'CLOUD_API';
-  messageType?: 'TEMPLATE' | 'TEXT';
   messageContent: string;
   metadata?: CampaignMetadata;
 }

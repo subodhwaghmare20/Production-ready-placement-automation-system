@@ -25,7 +25,6 @@ export interface PrepareCampaignInput {
   metaTemplateId?: string;
   metaTemplateName?: string;
   provider?: 'PERSONAL_ASSISTED' | 'CLOUD_API';
-  messageType?: 'TEMPLATE' | 'TEXT';
   messageContent: string;
   metadata?: ICampaignMetadata;
   adminId: string;
@@ -84,11 +83,11 @@ export class CampaignService {
 
     for (const m of memberships) {
       const c = m.candidateId;
-      const rawPhone = m.phoneNumber || c?.phoneNumber || '';
-      const name = m.studentName || c?.fullName || 'Student';
-      const hasConsent = m.consentStatus !== 'OptedOut' && (c ? c.whatsappConsent !== false : true);
-      const phoneNorm = normalizePhoneNumber(rawPhone);
-      const isEligible = hasConsent && phoneNorm.isValid && (!c || c.placementStatus !== 'Inactive');
+      if (!c) continue;
+
+      const hasConsent = Boolean(c.whatsappConsent);
+      const phoneNorm = normalizePhoneNumber(c.phoneNumber);
+      const isEligible = hasConsent && phoneNorm.isValid && c.placementStatus !== 'Inactive';
 
       if (hasConsent) consentedCount++;
       else unconsentedCount++;
@@ -97,9 +96,9 @@ export class CampaignService {
 
       if (sampleRecipients.length < 10) {
         sampleRecipients.push({
-          id: c?.candidateId || String(m._id),
-          name,
-          phone: rawPhone,
+          id: c.candidateId,
+          name: c.fullName,
+          phone: c.phoneNumber,
           consent: hasConsent,
           status: isEligible ? 'Eligible' : !hasConsent ? 'No Consent' : 'Invalid Phone',
         });
@@ -126,7 +125,18 @@ export class CampaignService {
     eligibleRecipients: ICampaignRecipient[];
     excludedRecipients: ExcludedRecipientSummary[];
   }> {
-    // 1. Resolve Virtual Group
+    // 1. Resolve Company
+    const company = await Company.findOne({
+      $or: [
+        { _id: input.companyId.match(/^[0-9a-fA-F]{24}$/) ? input.companyId : null },
+        { companyId: input.companyId },
+      ],
+    });
+    if (!company) {
+      throw new Error('Target company not found');
+    }
+
+    // 2. Resolve Virtual Group
     const group = await VirtualGroup.findOne({
       $or: [
         { _id: input.groupId.match(/^[0-9a-fA-F]{24}$/) ? input.groupId : null },
@@ -135,20 +145,6 @@ export class CampaignService {
     });
     if (!group) {
       throw new Error('Target virtual group not found');
-    }
-
-    // 2. Resolve Company (use provided companyId or fallback to group's linked company)
-    const company = input.companyId
-      ? await Company.findOne({
-          $or: [
-            { _id: input.companyId.match(/^[0-9a-fA-F]{24}$/) ? input.companyId : null },
-            { companyId: input.companyId },
-          ],
-        })
-      : await Company.findById(group.companyId);
-
-    if (!company) {
-      throw new Error('Target company not found');
     }
 
     // 3. Resolve Active Memberships
@@ -172,29 +168,26 @@ export class CampaignService {
 
     for (const membership of memberships) {
       const candidate = membership.candidateId;
-      const rawPhone = membership.phoneNumber || candidate?.phoneNumber || '';
-      const candidateName = membership.studentName || candidate?.fullName || 'Student';
-      const candidateIdStr = candidate?.candidateId || String(membership._id);
+      if (!candidate) continue;
 
       // Rule: Inactive candidate status check
-      if (candidate && candidate.placementStatus === 'Inactive') {
+      if (candidate.placementStatus === 'Inactive') {
         excludedRecipients.push({
-          candidateId: candidateIdStr,
-          candidateName,
-          phoneNumber: rawPhone,
+          candidateId: candidate.candidateId,
+          candidateName: candidate.fullName,
+          phoneNumber: candidate.phoneNumber,
           reason: 'INACTIVE_STATUS',
           details: 'Candidate placement status is marked as Inactive.',
         });
         continue;
       }
 
-      // Rule: WhatsApp Consent Check
-      const hasConsent = membership.consentStatus !== 'OptedOut' && (candidate ? candidate.whatsappConsent !== false : true);
-      if (!hasConsent) {
+      // Rule: Explicit WhatsApp Consent Check
+      if (!candidate.whatsappConsent) {
         excludedRecipients.push({
-          candidateId: candidateIdStr,
-          candidateName,
-          phoneNumber: rawPhone,
+          candidateId: candidate.candidateId,
+          candidateName: candidate.fullName,
+          phoneNumber: candidate.phoneNumber,
           reason: 'NO_WHATSAPP_CONSENT',
           details: 'Candidate has not granted explicit WhatsApp communication consent.',
         });
@@ -202,12 +195,14 @@ export class CampaignService {
       }
 
       // Rule: Valid Phone Number Normalization
-      const normalizedPhoneResult = normalizePhoneNumber(rawPhone);
+      const normalizedPhoneResult = normalizePhoneNumber(
+        candidate.normalizedPhoneNumber || candidate.phoneNumber
+      );
       if (!normalizedPhoneResult.isValid || !normalizedPhoneResult.normalized) {
         excludedRecipients.push({
-          candidateId: candidateIdStr,
-          candidateName,
-          phoneNumber: rawPhone,
+          candidateId: candidate.candidateId,
+          candidateName: candidate.fullName,
+          phoneNumber: candidate.phoneNumber,
           reason: 'INVALID_PHONE_NUMBER',
           details: normalizedPhoneResult.error || 'Invalid phone number format.',
         });
@@ -215,20 +210,12 @@ export class CampaignService {
       }
 
       // Module 8: Build variables and run placeholder personalization & validation
-      const variables = candidate
-        ? placeholderService.buildVariables(
-            candidate,
-            company,
-            input.metadata,
-            { name: input.metadata?.adminName || 'Placement Cell' }
-          )
-        : {
-            fullName: candidateName,
-            candidateName,
-            studentName: candidateName,
-            companyName: company.companyName,
-            ...input.metadata,
-          };
+      const variables = placeholderService.buildVariables(
+        candidate,
+        company,
+        input.metadata,
+        { name: input.metadata?.adminName || 'Placement Cell' }
+      );
 
       const personalization = placeholderService.personalizeAndValidate(
         input.messageContent,
@@ -249,9 +236,9 @@ export class CampaignService {
       }
 
       eligibleRecipientsToCreate.push({
-        candidateId: candidate?._id as unknown as mongoose.Types.ObjectId,
-        candidateName,
-        phoneNumber: rawPhone,
+        candidateId: candidate._id as unknown as mongoose.Types.ObjectId,
+        candidateName: candidate.fullName,
+        phoneNumber: candidate.phoneNumber,
         normalizedPhoneNumber: normalizedPhoneResult.normalized,
         personalizedMessage: personalization.personalizedMessage,
         clickToChatUrl,
@@ -285,7 +272,6 @@ export class CampaignService {
       templateId: input.templateId ? new mongoose.Types.ObjectId(input.templateId) : undefined,
       metaTemplateId: input.metaTemplateId ? new mongoose.Types.ObjectId(input.metaTemplateId) : undefined,
       metaTemplateName: input.metaTemplateName,
-      messageType: input.messageType || (input.metaTemplateId || input.metaTemplateName ? 'TEMPLATE' : 'TEXT'),
       messageTemplateContent: input.messageContent,
       provider: input.provider || 'PERSONAL_ASSISTED',
       status: 'PREPARED',

@@ -71,7 +71,7 @@ export const CampaignValidationPage: React.FC = () => {
 
   useEffect(() => {
     if (currentRecipient) {
-      setEditedMessageText(currentRecipient.personalizedMessage || '');
+      setEditedMessageText(currentRecipient.personalizedMessage);
       setIsEditingInline(false);
     }
   }, [currentIndex, currentRecipient?._id]);

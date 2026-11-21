@@ -1,14 +1,13 @@
 import { Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { Company, ICompany, RecruitmentStatus, WorkMode, InterviewMode, CompanyExperienceType } from '../models/Company.model';
-import { VirtualGroup } from '../models/VirtualGroup.model';
 import { generateCompanyId } from '../utils/idGenerator';
 import { isValidEmail } from '../utils/phoneNormalizer';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 
 /**
  * POST /api/companies
- * Create a new company (Required: companyName only)
+ * Create a new company drive & job profile
  */
 export const createCompany = async (
   req: AuthenticatedRequest,
@@ -52,6 +51,20 @@ export const createCompany = async (
       return;
     }
 
+    if (!jobRole || !jobRole.trim()) {
+      res.status(400).json({ success: false, message: 'Job role is required' });
+      return;
+    }
+
+    const candidateCount = parseInt(requiredCandidates, 10);
+    if (isNaN(candidateCount) || candidateCount < 1) {
+      res.status(400).json({
+        success: false,
+        message: 'Required candidates must be a valid number of at least 1',
+      });
+      return;
+    }
+
     if (hrEmail && !isValidEmail(hrEmail)) {
       res.status(400).json({ success: false, message: 'Invalid HR email address format' });
       return;
@@ -66,9 +79,9 @@ export const createCompany = async (
       hrName: hrName ? hrName.trim() : '',
       hrEmail: hrEmail ? hrEmail.trim().toLowerCase() : '',
       hrPhone: hrPhone ? hrPhone.trim() : '',
-      jobRole: jobRole ? jobRole.trim() : 'General',
+      jobRole: jobRole.trim(),
       jobDescription: jobDescription ? jobDescription.trim() : '',
-      requiredCandidates: parseInt(requiredCandidates, 10) || 1,
+      requiredCandidates: candidateCount,
       requiredSkills: Array.isArray(requiredSkills)
         ? requiredSkills.map((s: string) => s.trim()).filter(Boolean)
         : typeof requiredSkills === 'string'
@@ -188,25 +201,12 @@ export const getCompanies = async (
         .lean(),
     ]);
 
-    // Attach group counts per company
-    const companyIds = companies.map((c) => c._id);
-    const groupCounts = await VirtualGroup.aggregate([
-      { $match: { companyId: { $in: companyIds } } },
-      { $group: { _id: '$companyId', count: { $sum: 1 } } },
-    ]);
-    const groupCountMap = new Map(groupCounts.map((g) => [String(g._id), g.count]));
-
-    const companiesWithGroupCount = companies.map((c) => ({
-      ...c,
-      groupsCount: groupCountMap.get(String(c._id)) || 0,
-    }));
-
     const totalPages = Math.ceil(total / limit) || 1;
 
     res.status(200).json({
       success: true,
       data: {
-        companies: companiesWithGroupCount,
+        companies,
         pagination: {
           total,
           page,

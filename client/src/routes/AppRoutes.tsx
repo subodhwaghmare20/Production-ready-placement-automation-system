@@ -1,25 +1,39 @@
 import React from 'react';
-import { Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { DashboardPage } from '../pages/DashboardPage';
-import { GroupsPage } from '../pages/GroupsPage';
-import { GroupDetailPage } from '../pages/GroupDetailPage';
-import { CampaignProgressPage } from '../pages/CampaignProgressPage';
-import { WhatsAppConnectionPage } from '../pages/WhatsAppConnectionPage';
+import { CandidatesPage } from '../pages/CandidatesPage';
+import { CandidateProfilePage } from '../pages/CandidateProfilePage';
+import { CompaniesPage } from '../pages/CompaniesPage';
+import { CompanyProfilePage } from '../pages/CompanyProfilePage';
+import { VirtualGroupsPage } from '../pages/VirtualGroupsPage';
+import { CreateVirtualGroupPage } from '../pages/CreateVirtualGroupPage';
+import { VirtualGroupDetailPage } from '../pages/VirtualGroupDetailPage';
+import { ContactFetcherPage } from '../pages/ContactFetcherPage';
+import { WhatsAppMessagesPage } from '../pages/WhatsAppMessagesPage';
+import { CreateCampaignPage } from '../pages/CreateCampaignPage';
+import { CampaignDetailPage } from '../pages/CampaignDetailPage';
+import { CampaignValidationPage } from '../pages/CampaignValidationPage';
+import { CampaignProcessingPage } from '../pages/CampaignProcessingPage';
+import { MessageTemplatesPage } from '../pages/MessageTemplatesPage';
+import { CampaignAnalyticsPage } from '../pages/CampaignAnalyticsPage';
+import { RecipientTrackingPage } from '../pages/RecipientTrackingPage';
+import { CampaignComparisonPage } from '../pages/CampaignComparisonPage';
+import { ReportsPage } from '../pages/ReportsPage';
+import { SettingsPage } from '../pages/SettingsPage';
+import { WhatsAppCloudSettingsPage } from '../pages/WhatsAppCloudSettingsPage';
+import { MetaTemplatesPage } from '../pages/MetaTemplatesPage';
+import { InboundMessagesPage } from '../pages/InboundMessagesPage';
+import { WebhookEventsPage } from '../pages/WebhookEventsPage';
+import { AdminManagementPage } from '../pages/AdminManagementPage';
+import { RolePermissionMatrixPage } from '../pages/RolePermissionMatrixPage';
+import { AuditLogsPage } from '../pages/AuditLogsPage';
+import { SessionManagementPage } from '../pages/SessionManagementPage';
+import { SystemSettingsPage } from '../pages/SystemSettingsPage';
+import { NotFoundPage } from '../pages/NotFoundPage';
 import { LoginPage } from '../pages/LoginPage';
 import { ProtectedRoute } from './ProtectedRoute';
 import { PublicRoute } from './PublicRoute';
-
-// Helper redirect component for parameterized legacy paths
-const RedirectToGroupDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  return <Navigate to={`/groups/${id}`} replace />;
-};
-
-const RedirectToCampaign: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  return <Navigate to={`/campaigns/${id}`} replace />;
-};
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -32,40 +46,49 @@ export const AppRoutes: React.FC = () => {
       {/* Protected Routes (Authenticated Admin Only) */}
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<DashboardLayout />}>
-          {/* 1. Dashboard */}
           <Route index element={<DashboardPage />} />
+          <Route path="candidates" element={<CandidatesPage />} />
+          <Route path="candidates/:id" element={<CandidateProfilePage />} />
+          <Route path="companies" element={<CompaniesPage />} />
+          <Route path="companies/:id" element={<CompanyProfilePage />} />
+          <Route path="virtual-groups" element={<VirtualGroupsPage />} />
+          <Route path="virtual-groups/create" element={<CreateVirtualGroupPage />} />
+          <Route path="virtual-groups/:id" element={<VirtualGroupDetailPage />} />
+          <Route path="contact-fetcher" element={<ContactFetcherPage />} />
+          
+          {/* WhatsApp Messaging Engine Routes */}
+          <Route path="whatsapp-messages" element={<WhatsAppMessagesPage />} />
+          <Route path="whatsapp-messages/create" element={<CreateCampaignPage />} />
+          <Route path="whatsapp-messages/:id" element={<CampaignDetailPage />} />
+          <Route path="whatsapp-messages/:id/validation" element={<CampaignValidationPage />} />
+          <Route path="whatsapp-messages/:id/process" element={<CampaignProcessingPage />} />
+          <Route path="message-templates" element={<MessageTemplatesPage />} />
 
-          {/* 2. Groups (Contact Lists & Direct Messaging) */}
-          <Route path="groups" element={<GroupsPage />} />
-          <Route path="groups/:id" element={<GroupDetailPage />} />
+          {/* Module 9: Analytics, Tracking, Comparison & Reports */}
+          <Route path="campaign-analytics" element={<CampaignAnalyticsPage />} />
+          <Route path="recipient-tracking" element={<RecipientTrackingPage />} />
+          <Route path="campaign-comparison" element={<CampaignComparisonPage />} />
+          <Route path="whatsapp-messages/analytics" element={<Navigate to="/campaign-analytics" replace />} />
+          <Route path="whatsapp-messages/recipients" element={<Navigate to="/recipient-tracking" replace />} />
+          <Route path="whatsapp-messages/compare" element={<Navigate to="/campaign-comparison" replace />} />
 
-          {/* 3. WhatsApp Connection */}
-          <Route path="whatsapp-connection" element={<WhatsAppConnectionPage />} />
+          <Route path="reports" element={<ReportsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
 
-          {/* Campaign Live Tracking */}
-          <Route path="campaigns/:id" element={<CampaignProgressPage />} />
+          {/* Module 10: Official WhatsApp Cloud API & Webhooks */}
+          <Route path="whatsapp-cloud-settings" element={<WhatsAppCloudSettingsPage />} />
+          <Route path="meta-templates" element={<MetaTemplatesPage />} />
+          <Route path="inbound-messages" element={<InboundMessagesPage />} />
+          <Route path="webhook-events" element={<WebhookEventsPage />} />
 
-          {/* Legacy & Redirect Routes */}
-          <Route path="companies" element={<Navigate to="/groups" replace />} />
-          <Route path="companies/:id" element={<Navigate to="/groups" replace />} />
-          <Route path="send-message" element={<Navigate to="/groups" replace />} />
+          {/* Module 11: Admin Settings, Audit Logs, Roles & Permissions */}
+          <Route path="admins" element={<AdminManagementPage />} />
+          <Route path="roles" element={<RolePermissionMatrixPage />} />
+          <Route path="audit-logs" element={<AuditLogsPage />} />
+          <Route path="sessions" element={<SessionManagementPage />} />
+          <Route path="system-settings" element={<SystemSettingsPage />} />
 
-          {/* Legacy Route Redirects for Smooth Transition */}
-          <Route path="virtual-groups" element={<Navigate to="/groups" replace />} />
-          <Route path="virtual-groups/:id" element={<RedirectToGroupDetail />} />
-          <Route path="candidates" element={<Navigate to="/groups" replace />} />
-          <Route path="candidates/:id" element={<Navigate to="/groups" replace />} />
-          <Route path="whatsapp-messages" element={<Navigate to="/send-message" replace />} />
-          <Route path="whatsapp-messages/create" element={<Navigate to="/send-message" replace />} />
-          <Route path="whatsapp-messages/:id" element={<RedirectToCampaign />} />
-          <Route path="whatsapp-cloud-settings" element={<Navigate to="/whatsapp-connection" replace />} />
-          <Route path="contact-fetcher" element={<Navigate to="/groups" replace />} />
-          <Route path="campaign-analytics" element={<Navigate to="/" replace />} />
-          <Route path="reports" element={<Navigate to="/" replace />} />
-          <Route path="settings" element={<Navigate to="/whatsapp-connection" replace />} />
-
-          {/* Fallback to Dashboard */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Route>
 
