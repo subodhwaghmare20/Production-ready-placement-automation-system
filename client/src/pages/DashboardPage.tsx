@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Building2,
   FolderTree,
   Users,
   Send,
@@ -9,7 +8,7 @@ import {
   ArrowRight,
   RefreshCw,
   AlertCircle,
-  MessageSquare,
+  Cloud,
 } from 'lucide-react';
 import { getDashboardStats } from '../services/dashboardService';
 import { DashboardStats } from '../types';
@@ -39,7 +38,6 @@ export const DashboardPage: React.FC = () => {
     fetchStats();
   }, []);
 
-  const totalCompanies = stats?.totalCompanies ?? 0;
   const totalGroups = stats?.totalGroups ?? stats?.activeVirtualGroups ?? 0;
   const totalStudents = stats?.totalStudentNumbers ?? stats?.totalCandidates ?? 0;
   const totalSent = stats?.totalMessagesSent ?? stats?.messagesSent ?? 0;
@@ -50,41 +48,34 @@ export const DashboardPage: React.FC = () => {
       {/* Top Welcome & Quick Actions Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            WhatsApp Bulk Messaging Dashboard
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+            WhatsApp Bulk Messaging
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Welcome, <span className="font-semibold text-slate-700">{user?.name || 'Administrator'}</span>. Manage companies, student groups, and Cloud API broadcasts.
+            Welcome, <span className="font-semibold text-slate-700">{user?.name || 'Administrator'}</span>. Manage groups, student contact numbers, and WhatsApp dispatches directly.
           </p>
         </div>
 
         {/* Quick Action Shortcuts */}
         <div className="flex flex-wrap items-center gap-2.5">
           <Link
-            to="/companies"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
-          >
-            <Plus className="w-3.5 h-3.5 text-slate-500" />
-            Create Company
-          </Link>
-          <Link
             to="/groups"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs"
           >
-            <Plus className="w-3.5 h-3.5 text-slate-500" />
+            <Plus className="w-3.5 h-3.5" />
             Create Group
           </Link>
           <Link
-            to="/send-message"
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs"
+            to="/whatsapp-connection"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
           >
-            <Send className="w-3.5 h-3.5" />
-            Send Message
+            <Cloud className="w-3.5 h-3.5 text-slate-500" />
+            WhatsApp Connection
           </Link>
           <button
             onClick={fetchStats}
             title="Refresh metrics"
-            className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -99,232 +90,221 @@ export const DashboardPage: React.FC = () => {
           </div>
           <button
             onClick={fetchStats}
-            className="text-xs font-semibold text-amber-900 underline hover:no-underline"
+            className="text-xs font-semibold text-amber-900 underline hover:no-underline cursor-pointer"
           >
             Retry
           </button>
         </div>
       )}
 
-      {/* The 4 Core Summary Cards */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* Card 1: Total Companies */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
+        {/* Card 1: Groups */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Total Companies
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              Total Groups
             </span>
-            <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Building2 className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <FolderTree className="w-5 h-5" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-slate-900">
-              {loading ? '—' : totalCompanies}
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-3xl font-extrabold text-slate-900 font-mono">
+              {loading ? '...' : totalGroups}
             </span>
             <Link
-              to="/companies"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-0.5"
+              to="/groups"
+              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
             >
               Manage <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
-          <p className="mt-1 text-xs text-slate-400">Companies with messaging groups</p>
+          <p className="text-[11px] text-slate-400 mt-1">Company contact lists</p>
         </div>
 
-        {/* Card 2: Total Groups */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
+        {/* Card 2: Students */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Total Groups
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              Registered Students
             </span>
-            <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <FolderTree className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-slate-900">
-              {loading ? '—' : totalGroups}
-            </span>
-            <Link
-              to="/groups"
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-0.5"
-            >
-              View <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-          <p className="mt-1 text-xs text-slate-400">Virtual student contact lists</p>
-        </div>
-
-        {/* Card 3: Total Student Numbers */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Total Student Numbers
-            </span>
-            <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
               <Users className="w-5 h-5" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-slate-900">
-              {loading ? '—' : totalStudents}
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-3xl font-extrabold text-slate-900 font-mono">
+              {loading ? '...' : totalStudents}
             </span>
-            <Link
-              to="/groups"
-              className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 flex items-center gap-0.5"
-            >
-              Numbers <ArrowRight className="w-3 h-3" />
-            </Link>
+            <span className="text-xs font-bold text-blue-600">Mobile Numbers</span>
           </div>
-          <p className="mt-1 text-xs text-slate-400">Active numbers enrolled across groups</p>
+          <p className="text-[11px] text-slate-400 mt-1">Ready for individual messaging</p>
         </div>
 
-        {/* Card 4: Total Messages Sent */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
+        {/* Card 3: Messages Sent */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Total Messages Sent
             </span>
-            <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-              <MessageSquare className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Send className="w-5 h-5" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-slate-900">
-              {loading ? '—' : totalSent}
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-3xl font-extrabold text-slate-900 font-mono">
+              {loading ? '...' : totalSent}
+            </span>
+            <span className="text-xs font-bold text-indigo-600">Delivered</span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1">Official Cloud API dispatches</p>
+        </div>
+
+        {/* Card 4: WhatsApp Gateway */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              WhatsApp Gateway
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Cloud className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline justify-between">
+            <span className="text-base font-extrabold text-emerald-700 flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+              Connected
             </span>
             <Link
-              to="/send-message"
-              className="text-xs font-semibold text-purple-600 hover:text-purple-800 flex items-center gap-0.5"
+              to="/whatsapp-connection"
+              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
             >
-              Broadcast <ArrowRight className="w-3 h-3" />
+              Settings <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
-          <p className="mt-1 text-xs text-slate-400">Individual WhatsApp messages dispatched</p>
+          <p className="text-[11px] text-slate-400 mt-1">Meta Business Cloud API</p>
         </div>
       </div>
 
-      {/* Main Flow Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-xl p-5 text-white shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h3 className="text-base font-bold">Standard 4-Step Messaging Flow</h3>
-            <p className="text-xs text-slate-300 mt-0.5">
-              Follow this sequence to send official WhatsApp broadcasts to any batch of students:
-            </p>
+      {/* Simplified 3-Step Flow Banner */}
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-100 shadow-xs">
+        <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider mb-3">
+          How to Send Bulk WhatsApp Messages
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div className="bg-white/80 backdrop-blur-xs p-4 rounded-xl border border-emerald-100 flex items-start gap-3">
+            <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center shrink-0">
+              1
+            </span>
+            <div>
+              <span className="font-extrabold text-slate-900 text-sm block">Create Group</span>
+              <p className="text-slate-500 mt-1">
+                Enter your group name (e.g. TCS, Infosys, Wipro). Whatever name you give is the group & company.
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-xs font-medium">
-            <span className="px-2.5 py-1 bg-white/10 rounded-md">1. Company</span>
-            <span>→</span>
-            <span className="px-2.5 py-1 bg-white/10 rounded-md">2. Group</span>
-            <span>→</span>
-            <span className="px-2.5 py-1 bg-white/10 rounded-md">3. Paste Numbers</span>
-            <span>→</span>
-            <span className="px-2.5 py-1 bg-emerald-500 text-white font-semibold rounded-md">4. Send To All</span>
+
+          <div className="bg-white/80 backdrop-blur-xs p-4 rounded-xl border border-emerald-100 flex items-start gap-3">
+            <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center shrink-0">
+              2
+            </span>
+            <div>
+              <span className="font-extrabold text-slate-900 text-sm block">Add Mobile Numbers</span>
+              <p className="text-slate-500 mt-1">
+                Add numbers individually or paste in bulk from Excel or text files directly inside the group.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white/80 backdrop-blur-xs p-4 rounded-xl border border-emerald-100 flex items-start gap-3">
+            <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center shrink-0">
+              3
+            </span>
+            <div>
+              <span className="font-extrabold text-slate-900 text-sm block">Write & Send To All</span>
+              <p className="text-slate-500 mt-1">
+                Compose your message directly inside the group and click "SEND TO ALL" for automated individual delivery.
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Recent Campaigns Section */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">Recent Campaigns</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Live broadcast history and delivery tracking
-            </p>
+      {/* Recent Dispatches Table */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Send className="w-4 h-4 text-emerald-600" />
+            <h2 className="text-base font-extrabold text-slate-900">Recent WhatsApp Dispatches</h2>
           </div>
           <Link
-            to="/send-message"
-            className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+            to="/groups"
+            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
           >
-            Launch New Message <ArrowRight className="w-3.5 h-3.5" />
+            View Groups <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
-        {loading ? (
-          <div className="p-12 text-center text-slate-400 text-sm">
-            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-300" />
-            Loading campaigns...
-          </div>
-        ) : recentCampaigns.length === 0 ? (
-          <div className="p-12 text-center">
-            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
-              <Send className="w-6 h-6" />
-            </div>
-            <h3 className="text-sm font-semibold text-slate-900">No campaigns launched yet</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-              Create a group with student mobile numbers, then click Send Message to dispatch your first WhatsApp broadcast!
-            </p>
-            <div className="mt-4">
-              <Link
-                to="/send-message"
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
-              >
-                <Send className="w-3.5 h-3.5" />
-                Go to Send Message
-              </Link>
-            </div>
+        {recentCampaigns.length === 0 ? (
+          <div className="p-8 text-center text-xs text-slate-400">
+            No WhatsApp dispatches recorded yet. Open a group to send your first message!
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-3">Campaign / Group</th>
-                  <th className="px-6 py-3">Company</th>
-                  <th className="px-6 py-3">Recipients</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3">Date</th>
-                  <th className="px-6 py-3 text-right">Actions</th>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50/75 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="py-3 px-5">Group / Dispatch Name</th>
+                  <th className="py-3 px-4 text-center">Status</th>
+                  <th className="py-3 px-4 text-center">Recipients</th>
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-5 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {recentCampaigns.map((camp) => {
-                  const companyName = camp.companyId?.companyName || '—';
-                  const groupName = camp.groupId?.groupName || camp.name || 'Group Campaign';
-                  const total = camp.totalRecipients || camp.metrics?.totalRecipients || 0;
-                  const isDone = camp.status === 'COMPLETED';
-                  const isInProgress = camp.status === 'IN_PROGRESS';
-
+              <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                {recentCampaigns.map((camp: any) => {
+                  const gId = typeof camp.groupId === 'object' ? camp.groupId?._id : camp.groupId;
                   return (
-                    <tr key={camp._id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-6 py-4 font-semibold text-slate-900">
-                        {groupName}
+                    <tr key={camp._id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="py-3 px-5 font-bold text-slate-900">
+                        {camp.name}
                       </td>
-                      <td className="px-6 py-4 text-slate-600">
-                        <span className="inline-flex items-center gap-1">
-                          <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                          {companyName}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-slate-600">
-                        <span className="font-semibold text-slate-900">{total}</span> students
-                      </td>
-                      <td className="px-6 py-4">
+                      <td className="py-3 px-4 text-center">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                            isDone
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : isInProgress
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200 animate-pulse'
-                              : 'bg-slate-100 text-slate-700'
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                            camp.status === 'COMPLETED'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : camp.status === 'IN_PROGRESS' || camp.status === 'RUNNING'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-slate-100 text-slate-800'
                           }`}
                         >
                           {camp.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-xs text-slate-400">
+                      <td className="py-3 px-4 text-center font-mono font-bold text-slate-800">
+                        {camp.metrics?.processedRecipients || camp.metrics?.eligibleRecipients || 0}
+                      </td>
+                      <td className="py-3 px-4 text-slate-400">
                         {new Date(camp.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <Link
-                          to={`/campaigns/${camp._id}`}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700"
-                        >
-                          View Progress <ArrowRight className="w-3 h-3" />
-                        </Link>
+                      <td className="py-3 px-5 text-right">
+                        {gId ? (
+                          <Link
+                            to={`/groups/${gId}`}
+                            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center justify-end gap-1"
+                          >
+                            Open Group <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
+                        ) : (
+                          <Link
+                            to={`/campaigns/${camp._id}`}
+                            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center justify-end gap-1"
+                          >
+                            View Tracker <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
+                        )}
                       </td>
                     </tr>
                   );
@@ -337,5 +317,3 @@ export const DashboardPage: React.FC = () => {
     </div>
   );
 };
-
-export default DashboardPage;

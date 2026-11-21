@@ -126,18 +126,7 @@ export class CampaignService {
     eligibleRecipients: ICampaignRecipient[];
     excludedRecipients: ExcludedRecipientSummary[];
   }> {
-    // 1. Resolve Company
-    const company = await Company.findOne({
-      $or: [
-        { _id: input.companyId.match(/^[0-9a-fA-F]{24}$/) ? input.companyId : null },
-        { companyId: input.companyId },
-      ],
-    });
-    if (!company) {
-      throw new Error('Target company not found');
-    }
-
-    // 2. Resolve Virtual Group
+    // 1. Resolve Virtual Group
     const group = await VirtualGroup.findOne({
       $or: [
         { _id: input.groupId.match(/^[0-9a-fA-F]{24}$/) ? input.groupId : null },
@@ -146,6 +135,20 @@ export class CampaignService {
     });
     if (!group) {
       throw new Error('Target virtual group not found');
+    }
+
+    // 2. Resolve Company (use provided companyId or fallback to group's linked company)
+    const company = input.companyId
+      ? await Company.findOne({
+          $or: [
+            { _id: input.companyId.match(/^[0-9a-fA-F]{24}$/) ? input.companyId : null },
+            { companyId: input.companyId },
+          ],
+        })
+      : await Company.findById(group.companyId);
+
+    if (!company) {
+      throw new Error('Target company not found');
     }
 
     // 3. Resolve Active Memberships

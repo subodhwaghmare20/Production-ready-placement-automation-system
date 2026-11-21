@@ -23,27 +23,33 @@ export const createGroup = async (
   try {
     const { companyId, groupName, description, candidateIds } = req.body;
 
-    if (!companyId) {
-      res.status(400).json({ success: false, message: 'Company ID is required' });
-      return;
-    }
-
     if (!groupName || !groupName.trim()) {
       res.status(400).json({ success: false, message: 'Group name is required' });
       return;
     }
 
-    const company = await Company.findById(companyId);
-    if (!company) {
-      res.status(404).json({ success: false, message: 'Referenced company not found' });
-      return;
+    let targetCompany = null;
+    if (companyId) {
+      targetCompany = await Company.findById(companyId);
+    }
+    if (!targetCompany) {
+      // Whatever group name we are giving, that is the company name
+      targetCompany = await Company.findOne({ companyName: groupName.trim() });
+      if (!targetCompany) {
+        targetCompany = await Company.create({
+          companyName: groupName.trim(),
+          jobRole: 'Candidate',
+          requiredCandidates: 1,
+          createdBy: req.admin?._id,
+        });
+      }
     }
 
     const newGroup = new VirtualGroup({
       groupId: generateGroupId(),
       groupName: groupName.trim(),
       description: description ? description.trim() : '',
-      companyId: company._id,
+      companyId: targetCompany._id,
       memberCount: 0,
       status: 'Active',
       createdBy: req.admin?._id,
@@ -55,7 +61,7 @@ export const createGroup = async (
     await GroupActivity.create({
       groupId: newGroup._id,
       action: 'GROUP_CREATED',
-      details: `Virtual group "${newGroup.groupName}" initialized for ${company.companyName} by ${req.admin?.name || 'Admin'}`,
+      details: `Virtual group "${newGroup.groupName}" initialized for ${targetCompany.companyName} by ${req.admin?.name || 'Admin'}`,
       performedBy: req.admin?._id,
     });
 
@@ -92,7 +98,7 @@ export const createGroup = async (
       message: 'Virtual group created successfully',
       data: {
         ...newGroup.toObject(),
-        company,
+        company: targetCompany,
         initialMembersAdded: addedCount,
       },
     });
@@ -246,7 +252,12 @@ export const updateGroup = async (
     const { groupName, description, status } = req.body;
     const previousStatus = group.status;
 
-    if (groupName !== undefined) group.groupName = groupName.trim();
+    if (groupName !== undefined) {
+      group.groupName = groupName.trim();
+      if (group.companyId) {
+        await Company.findByIdAndUpdate(group.companyId, { companyName: groupName.trim() });
+      }
+    }
     if (description !== undefined) group.description = description.trim();
     if (status !== undefined) group.status = status as GroupStatus;
 

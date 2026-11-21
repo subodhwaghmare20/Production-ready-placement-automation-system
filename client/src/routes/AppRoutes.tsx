@@ -2,10 +2,8 @@ import React from 'react';
 import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { DashboardPage } from '../pages/DashboardPage';
-import { CompaniesPage } from '../pages/CompaniesPage';
 import { GroupsPage } from '../pages/GroupsPage';
 import { GroupDetailPage } from '../pages/GroupDetailPage';
-import { SendMessagePage } from '../pages/SendMessagePage';
 import { CampaignProgressPage } from '../pages/CampaignProgressPage';
 import { WhatsAppConnectionPage } from '../pages/WhatsAppConnectionPage';
 import { LoginPage } from '../pages/LoginPage';
@@ -37,20 +35,20 @@ export const AppRoutes: React.FC = () => {
           {/* 1. Dashboard */}
           <Route index element={<DashboardPage />} />
 
-          {/* 2. Companies */}
-          <Route path="companies" element={<CompaniesPage />} />
-          <Route path="companies/:id" element={<CompaniesPage />} />
-
-          {/* 3. Groups (Virtual Contact Lists) */}
+          {/* 2. Groups (Contact Lists & Direct Messaging) */}
           <Route path="groups" element={<GroupsPage />} />
           <Route path="groups/:id" element={<GroupDetailPage />} />
 
-          {/* 4. Send Message & Live Campaign Tracking */}
-          <Route path="send-message" element={<SendMessagePage />} />
+          {/* 3. WhatsApp Connection */}
+          <Route path="whatsapp-connection" element={<WhatsAppConnectionPage />} />
+
+          {/* Campaign Live Tracking */}
           <Route path="campaigns/:id" element={<CampaignProgressPage />} />
 
-          {/* 5. WhatsApp Connection */}
-          <Route path="whatsapp-connection" element={<WhatsAppConnectionPage />} />
+          {/* Legacy & Redirect Routes */}
+          <Route path="companies" element={<Navigate to="/groups" replace />} />
+          <Route path="companies/:id" element={<Navigate to="/groups" replace />} />
+          <Route path="send-message" element={<Navigate to="/groups" replace />} />
 
           {/* Legacy Route Redirects for Smooth Transition */}
           <Route path="virtual-groups" element={<Navigate to="/groups" replace />} />

@@ -33,8 +33,8 @@ export const getGroupById = async (id: string): Promise<VirtualGroup> => {
 };
 
 export const createGroup = async (data: {
-  companyId: string;
   groupName: string;
+  companyId?: string;
   description?: string;
   candidateIds?: string[];
 }): Promise<VirtualGroup> => {

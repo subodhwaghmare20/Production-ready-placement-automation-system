@@ -2,9 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Building2,
   FolderTree,
-  Send,
   Cloud,
   X,
   LogOut,
@@ -22,9 +20,7 @@ interface SidebarProps {
 
 const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { title: 'Companies', href: '/companies', icon: Building2 },
   { title: 'Groups', href: '/groups', icon: FolderTree },
-  { title: 'Send Message', href: '/send-message', icon: Send },
   { title: 'WhatsApp Connection', href: '/whatsapp-connection', icon: Cloud },
 ];
 
