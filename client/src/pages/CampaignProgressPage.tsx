@@ -119,6 +119,28 @@ export const CampaignProgressPage: React.FC = () => {
     }
   };
 
+  const handleStartDispatch = async () => {
+    if (!id) return;
+    try {
+      setActionLoading(true);
+      await cloudApiService.startCampaign(id);
+      await fetchCampaignData(false);
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Failed to start dispatch. Please verify WhatsApp credentials in Settings.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const getRecipientStatus = (r: CampaignRecipient): 'READ' | 'DELIVERED' | 'SENT' | 'FAILED' | 'PENDING' => {
+    const s = ((r as any).providerStatus || r.deliveryStatus || '').toUpperCase();
+    if (s === 'READ') return 'READ';
+    if (s === 'DELIVERED') return 'DELIVERED';
+    if (s === 'SENT' || r.status === 'SENT_MANUALLY_CONFIRMED') return 'SENT';
+    if (s === 'FAILED' || r.status === 'FAILED_TO_OPEN') return 'FAILED';
+    return 'PENDING';
+  };
+
   if (loading) {
     return (
       <div className="p-16 flex justify-center">
@@ -143,12 +165,12 @@ export const CampaignProgressPage: React.FC = () => {
     );
   }
 
-  // Calculate statistics
+  // Calculate statistics using effective status
   const total = campaign.totalRecipients || recipients.length || 0;
-  const sent = campaign.sentCount || recipients.filter((r) => ['SENT', 'DELIVERED', 'READ'].includes(r.deliveryStatus || '')).length;
-  const delivered = campaign.deliveredCount || recipients.filter((r) => ['DELIVERED', 'READ'].includes(r.deliveryStatus || '')).length;
-  const read = campaign.readCount || recipients.filter((r) => r.deliveryStatus === 'READ').length;
-  const failed = campaign.failedCount || recipients.filter((r) => r.deliveryStatus === 'FAILED').length;
+  const sent = recipients.filter((r) => ['SENT', 'DELIVERED', 'READ'].includes(getRecipientStatus(r))).length;
+  const delivered = recipients.filter((r) => ['DELIVERED', 'READ'].includes(getRecipientStatus(r))).length;
+  const read = recipients.filter((r) => getRecipientStatus(r) === 'READ').length;
+  const failed = recipients.filter((r) => getRecipientStatus(r) === 'FAILED').length;
   const pending = Math.max(0, total - (sent + failed));
 
   const progressPercent = total > 0 ? Math.round(((sent + failed) / total) * 100) : 0;
@@ -165,11 +187,13 @@ export const CampaignProgressPage: React.FC = () => {
 
   const isCompleted = ['COMPLETED', 'FINISHED'].includes(campaign.status?.toUpperCase() || '');
   const isPaused = campaign.status?.toUpperCase() === 'PAUSED';
-  const isRunning = ['PROCESSING', 'RUNNING', 'SENDING'].includes(campaign.status?.toUpperCase() || '');
+  const isRunning = ['PROCESSING', 'RUNNING', 'SENDING', 'IN_PROGRESS'].includes(campaign.status?.toUpperCase() || '');
+  const isPendingStart = ['PREPARED', 'DRAFT', 'READY'].includes(campaign.status?.toUpperCase() || '');
 
   // Filtered recipients
   const filteredRecipients = recipients.filter((r) => {
-    if (statusFilter !== 'ALL' && r.deliveryStatus !== statusFilter) return false;
+    const status = getRecipientStatus(r);
+    if (statusFilter !== 'ALL' && status !== statusFilter) return false;
     if (searchTerm.trim()) {
       const s = searchTerm.toLowerCase();
       const phone = (r.phoneNumber || '').toLowerCase();
@@ -221,6 +245,16 @@ export const CampaignProgressPage: React.FC = () => {
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
+          {isPendingStart && (
+            <button
+              onClick={handleStartDispatch}
+              disabled={actionLoading}
+              className="inline-flex items-center px-4 py-2 text-xs font-bold rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs gap-1.5 transition-colors disabled:opacity-50"
+            >
+              <Send className="h-4 w-4" /> Start Dispatch / Send Now
+            </button>
+          )}
+
           {isRunning && (
             <button
               onClick={handlePause}
@@ -399,37 +433,41 @@ export const CampaignProgressPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                 {filteredRecipients.map((r, idx) => {
+                  const status = getRecipientStatus(r);
                   let badge = (
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
                       PENDING
                     </span>
                   );
 
-                  if (r.deliveryStatus === 'READ') {
+                  if (status === 'READ') {
                     badge = (
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800 flex items-center gap-1 justify-center">
                         <Eye className="h-3 w-3" /> READ
                       </span>
                     );
-                  } else if (r.deliveryStatus === 'DELIVERED') {
+                  } else if (status === 'DELIVERED') {
                     badge = (
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1 justify-center">
                         <CheckCheck className="h-3 w-3" /> DELIVERED
                       </span>
                     );
-                  } else if (r.deliveryStatus === 'SENT') {
+                  } else if (status === 'SENT') {
                     badge = (
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 flex items-center gap-1 justify-center">
                         <Check className="h-3 w-3" /> SENT
                       </span>
                     );
-                  } else if (r.deliveryStatus === 'FAILED') {
+                  } else if (status === 'FAILED') {
                     badge = (
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800 flex items-center gap-1 justify-center">
                         <AlertCircle className="h-3 w-3" /> FAILED
                       </span>
                     );
                   }
+
+                  const errorText = (r as any).providerErrorMessage || r.errorMessage;
+                  const messageId = (r as any).providerMessageId || r.metaMessageId;
 
                   return (
                     <tr key={r._id || idx} className="hover:bg-slate-50/50 transition-colors">
@@ -442,11 +480,11 @@ export const CampaignProgressPage: React.FC = () => {
                       </td>
                       <td className="py-2.5 px-4 text-center">{badge}</td>
                       <td className="py-2.5 px-4 text-slate-500 max-w-xs truncate">
-                        {r.errorMessage ? (
-                          <span className="text-red-600 font-medium">{r.errorMessage}</span>
-                        ) : r.metaMessageId ? (
+                        {errorText ? (
+                          <span className="text-red-600 font-medium">{errorText}</span>
+                        ) : messageId ? (
                           <span className="font-mono text-[10px] text-slate-400">
-                            ID: {r.metaMessageId}
+                            ID: {messageId}
                           </span>
                         ) : (
                           '—'

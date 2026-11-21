@@ -25,6 +25,7 @@ export interface PrepareCampaignInput {
   metaTemplateId?: string;
   metaTemplateName?: string;
   provider?: 'PERSONAL_ASSISTED' | 'CLOUD_API';
+  messageType?: 'TEMPLATE' | 'TEXT';
   messageContent: string;
   metadata?: ICampaignMetadata;
   adminId: string;
@@ -281,6 +282,7 @@ export class CampaignService {
       templateId: input.templateId ? new mongoose.Types.ObjectId(input.templateId) : undefined,
       metaTemplateId: input.metaTemplateId ? new mongoose.Types.ObjectId(input.metaTemplateId) : undefined,
       metaTemplateName: input.metaTemplateName,
+      messageType: input.messageType || (input.metaTemplateId || input.metaTemplateName ? 'TEMPLATE' : 'TEXT'),
       messageTemplateContent: input.messageContent,
       provider: input.provider || 'PERSONAL_ASSISTED',
       status: 'PREPARED',

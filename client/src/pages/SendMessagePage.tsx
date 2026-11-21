@@ -181,6 +181,7 @@ export const SendMessagePage: React.FC = () => {
         companyId: selectedCompanyId,
         groupId: selectedGroupId,
         provider: 'CLOUD_API',
+        messageType: messageType,
         messageContent: getRenderedMessage(),
       };
 
