@@ -10,18 +10,34 @@ import { csrfProtection } from './middleware/csrf.middleware';
 const createApp = (): Application => {
   const app = express();
 
-  // CORS configuration supporting credentials for cookies
+  // Dynamic CORS configuration supporting credentials for cookies
   const configuredOrigins = env.CLIENT_URL
-    ? env.CLIENT_URL.split(',').map((u) => u.trim())
+    ? env.CLIENT_URL.split(',').map((u) => u.trim().replace(/\/$/, ''))
     : [];
-  const allowedOrigins = [
-    ...configuredOrigins,
-    ...(env.NODE_ENV !== 'production' ? ['http://localhost:5173', 'http://127.0.0.1:5173'] : []),
-  ].filter(Boolean);
 
   app.use(
     cors({
-      origin: allowedOrigins.length > 0 ? allowedOrigins : true,
+      origin: (requestOrigin, callback) => {
+        // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+        if (!requestOrigin) {
+          return callback(null, true);
+        }
+
+        const normalizedOrigin = requestOrigin.replace(/\/$/, '');
+
+        // Allow if wildcard configured, origin explicitly configured, ends in .vercel.app, or localhost
+        if (
+          configuredOrigins.includes('*') ||
+          configuredOrigins.includes(normalizedOrigin) ||
+          normalizedOrigin.endsWith('.vercel.app') ||
+          normalizedOrigin.includes('localhost') ||
+          normalizedOrigin.includes('127.0.0.1')
+        ) {
+          return callback(null, true);
+        }
+
+        return callback(null, false);
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'x-csrf-token'],
