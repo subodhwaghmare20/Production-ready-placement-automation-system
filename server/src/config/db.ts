@@ -20,7 +20,8 @@ export const connectDatabase = async (): Promise<typeof mongoose | null> => {
     if (env.NODE_ENV === 'development') {
       try {
         logger.info('Initializing fallback In-Memory MongoDB Server for development...');
-        const { MongoMemoryServer } = await import('mongodb-memory-server');
+        const memPackage = 'mongodb-memory-server';
+        const { MongoMemoryServer } = await (import(memPackage) as Promise<any>);
         memoryServer = await MongoMemoryServer.create();
         const memoryUri = memoryServer.getUri();
         
