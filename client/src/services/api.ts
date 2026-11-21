@@ -17,9 +17,14 @@ function getCookie(name: string): string | null {
   return match ? decodeURIComponent(match[3]) : null;
 }
 
-// Request interceptor to attach CSRF token header for mutating calls
+// Request interceptor to attach Bearer token and CSRF token header
 apiClient.interceptors.request.use((config) => {
-  const csrfToken = getCookie('csrfToken');
+  const token = localStorage.getItem('auth_token');
+  if (token && config.headers && !config.headers['Authorization']) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const csrfToken = getCookie('csrfToken') || localStorage.getItem('csrf_token');
   if (csrfToken && config.headers) {
     config.headers['X-CSRF-Token'] = csrfToken;
   }

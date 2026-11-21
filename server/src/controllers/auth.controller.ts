@@ -170,6 +170,7 @@ export const login = async (
       success: true,
       message: 'Login successful',
       data: {
+        token,
         admin: {
           id: admin._id,
           adminId: admin.adminId,

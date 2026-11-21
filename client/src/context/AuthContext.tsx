@@ -39,6 +39,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen to session expired events dispatched by apiClient interceptor
     const handleExpired = () => {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('csrf_token');
       setUser(null);
       setError('Your session has expired. Please log in again.');
     };
