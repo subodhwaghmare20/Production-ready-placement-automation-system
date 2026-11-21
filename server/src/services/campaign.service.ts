@@ -83,11 +83,11 @@ export class CampaignService {
 
     for (const m of memberships) {
       const c = m.candidateId;
-      if (!c) continue;
-
-      const hasConsent = Boolean(c.whatsappConsent);
-      const phoneNorm = normalizePhoneNumber(c.phoneNumber);
-      const isEligible = hasConsent && phoneNorm.isValid && c.placementStatus !== 'Inactive';
+      const rawPhone = m.phoneNumber || c?.phoneNumber || '';
+      const name = m.studentName || c?.fullName || 'Student';
+      const hasConsent = m.consentStatus !== 'OptedOut' && (c ? c.whatsappConsent !== false : true);
+      const phoneNorm = normalizePhoneNumber(rawPhone);
+      const isEligible = hasConsent && phoneNorm.isValid && (!c || c.placementStatus !== 'Inactive');
 
       if (hasConsent) consentedCount++;
       else unconsentedCount++;
@@ -96,9 +96,9 @@ export class CampaignService {
 
       if (sampleRecipients.length < 10) {
         sampleRecipients.push({
-          id: c.candidateId,
-          name: c.fullName,
-          phone: c.phoneNumber,
+          id: c?.candidateId || String(m._id),
+          name,
+          phone: rawPhone,
           consent: hasConsent,
           status: isEligible ? 'Eligible' : !hasConsent ? 'No Consent' : 'Invalid Phone',
         });
@@ -168,26 +168,29 @@ export class CampaignService {
 
     for (const membership of memberships) {
       const candidate = membership.candidateId;
-      if (!candidate) continue;
+      const rawPhone = membership.phoneNumber || candidate?.phoneNumber || '';
+      const candidateName = membership.studentName || candidate?.fullName || 'Student';
+      const candidateIdStr = candidate?.candidateId || String(membership._id);
 
       // Rule: Inactive candidate status check
-      if (candidate.placementStatus === 'Inactive') {
+      if (candidate && candidate.placementStatus === 'Inactive') {
         excludedRecipients.push({
-          candidateId: candidate.candidateId,
-          candidateName: candidate.fullName,
-          phoneNumber: candidate.phoneNumber,
+          candidateId: candidateIdStr,
+          candidateName,
+          phoneNumber: rawPhone,
           reason: 'INACTIVE_STATUS',
           details: 'Candidate placement status is marked as Inactive.',
         });
         continue;
       }
 
-      // Rule: Explicit WhatsApp Consent Check
-      if (!candidate.whatsappConsent) {
+      // Rule: WhatsApp Consent Check
+      const hasConsent = membership.consentStatus !== 'OptedOut' && (candidate ? candidate.whatsappConsent !== false : true);
+      if (!hasConsent) {
         excludedRecipients.push({
-          candidateId: candidate.candidateId,
-          candidateName: candidate.fullName,
-          phoneNumber: candidate.phoneNumber,
+          candidateId: candidateIdStr,
+          candidateName,
+          phoneNumber: rawPhone,
           reason: 'NO_WHATSAPP_CONSENT',
           details: 'Candidate has not granted explicit WhatsApp communication consent.',
         });
@@ -195,14 +198,12 @@ export class CampaignService {
       }
 
       // Rule: Valid Phone Number Normalization
-      const normalizedPhoneResult = normalizePhoneNumber(
-        candidate.normalizedPhoneNumber || candidate.phoneNumber
-      );
+      const normalizedPhoneResult = normalizePhoneNumber(rawPhone);
       if (!normalizedPhoneResult.isValid || !normalizedPhoneResult.normalized) {
         excludedRecipients.push({
-          candidateId: candidate.candidateId,
-          candidateName: candidate.fullName,
-          phoneNumber: candidate.phoneNumber,
+          candidateId: candidateIdStr,
+          candidateName,
+          phoneNumber: rawPhone,
           reason: 'INVALID_PHONE_NUMBER',
           details: normalizedPhoneResult.error || 'Invalid phone number format.',
         });
@@ -210,12 +211,20 @@ export class CampaignService {
       }
 
       // Module 8: Build variables and run placeholder personalization & validation
-      const variables = placeholderService.buildVariables(
-        candidate,
-        company,
-        input.metadata,
-        { name: input.metadata?.adminName || 'Placement Cell' }
-      );
+      const variables = candidate
+        ? placeholderService.buildVariables(
+            candidate,
+            company,
+            input.metadata,
+            { name: input.metadata?.adminName || 'Placement Cell' }
+          )
+        : {
+            fullName: candidateName,
+            candidateName,
+            studentName: candidateName,
+            companyName: company.companyName,
+            ...input.metadata,
+          };
 
       const personalization = placeholderService.personalizeAndValidate(
         input.messageContent,
@@ -236,9 +245,9 @@ export class CampaignService {
       }
 
       eligibleRecipientsToCreate.push({
-        candidateId: candidate._id as unknown as mongoose.Types.ObjectId,
-        candidateName: candidate.fullName,
-        phoneNumber: candidate.phoneNumber,
+        candidateId: candidate?._id as unknown as mongoose.Types.ObjectId,
+        candidateName,
+        phoneNumber: rawPhone,
         normalizedPhoneNumber: normalizedPhoneResult.normalized,
         personalizedMessage: personalization.personalizedMessage,
         clickToChatUrl,

@@ -8,6 +8,7 @@ import { Candidate } from '../models/Candidate.model';
 import { generateGroupId } from '../utils/idGenerator';
 import { evaluateCandidateEligibility } from '../services/eligibilityService';
 import { resolveGroupRecipients } from '../services/recipientService';
+import { normalizePhoneNumber } from '../utils/phoneNormalizer';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 
 /**
@@ -35,16 +36,6 @@ export const createGroup = async (
     const company = await Company.findById(companyId);
     if (!company) {
       res.status(404).json({ success: false, message: 'Referenced company not found' });
-      return;
-    }
-
-    // Enforce one primary group per company constraint
-    const existingGroup = await VirtualGroup.findOne({ companyId: company._id });
-    if (existingGroup) {
-      res.status(409).json({
-        success: false,
-        message: `A virtual group already exists for ${company.companyName} (${existingGroup.groupId} - ${existingGroup.groupName}). A company may have only one primary recruitment group in this module.`,
-      });
       return;
     }
 
@@ -317,20 +308,44 @@ export const deleteGroup = async (
 };
 
 /**
- * POST /api/groups/:id/members
- * Assigns one or multiple candidates to a virtual group. Prevents duplicate active memberships.
+ * Helper to parse raw text into mobile numbers and optional student names
  */
-export const addGroupMembers = async (
+function parseRawNumbers(rawText: string): Array<{ raw: string; phone: string; name: string }> {
+  const lines = rawText.split(/[\r\n,;]+/).map((l) => l.trim()).filter(Boolean);
+  const results: Array<{ raw: string; phone: string; name: string }> = [];
+
+  for (const line of lines) {
+    // Check if line contains comma or hyphen or tab separating name & phone
+    // e.g., "9876543210 - Rahul Sharma" or "Rahul Sharma, 9876543210" or "9876543210"
+    const matchPhone = line.match(/(\+?\d[\d\s\-()]{8,15}\d)/);
+    if (matchPhone) {
+      const phone = matchPhone[1].replace(/[\s\-()]/g, '');
+      const name = line.replace(matchPhone[0], '').replace(/^[\s\-:,]+|[\s\-:,]+$/g, '').trim();
+      results.push({ raw: line, phone, name });
+    } else {
+      // Treat entire line as phone attempt
+      results.push({ raw: line, phone: line.trim(), name: '' });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * POST /api/groups/:id/members/preview
+ * Analyzes bulk paste text before adding to group.
+ */
+export const previewBulkMembers = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { candidateIds } = req.body;
+    const { rawText } = req.body;
 
-    if (!Array.isArray(candidateIds) || candidateIds.length === 0) {
-      res.status(400).json({ success: false, message: 'candidateIds array is required' });
+    if (!rawText || typeof rawText !== 'string' || !rawText.trim()) {
+      res.status(400).json({ success: false, message: 'rawText string is required' });
       return;
     }
 
@@ -341,79 +356,323 @@ export const addGroupMembers = async (
       return;
     }
 
-    let addedCount = 0;
-    let reactivatedCount = 0;
-    let alreadyActiveCount = 0;
-    const addedCandidateNames: string[] = [];
+    const parsed = parseRawNumbers(rawText);
+    const totalDetected = parsed.length;
 
-    for (const candId of candidateIds) {
-      const candidate = await Candidate.findById(candId);
-      if (!candidate) continue;
+    const seenInPaste = new Set<string>();
+    const validItems: Array<{ original: string; phone: string; normalized: string; name: string }> = [];
+    let duplicateInPasteCount = 0;
+    const invalidItems: Array<{ raw: string; error: string }> = [];
 
-      const existingMembership = await GroupMembership.findOne({
+    for (const item of parsed) {
+      const norm = normalizePhoneNumber(item.phone);
+      if (!norm.isValid) {
+        invalidItems.push({ raw: item.raw, error: norm.error || 'Invalid phone format' });
+        continue;
+      }
+
+      if (seenInPaste.has(norm.normalized)) {
+        duplicateInPasteCount++;
+        continue;
+      }
+
+      seenInPaste.add(norm.normalized);
+      validItems.push({
+        original: item.raw,
+        phone: item.phone,
+        normalized: norm.normalized,
+        name: item.name,
+      });
+    }
+
+    // Check which valid numbers are already in this group
+    const validNormalizedList = validItems.map((v) => v.normalized);
+    const existingMemberships = await GroupMembership.find({
+      groupId: group._id,
+      normalizedPhoneNumber: { $in: validNormalizedList },
+      membershipStatus: 'Active',
+    }).select('normalizedPhoneNumber');
+
+    const existingSet = new Set(existingMemberships.map((m) => m.normalizedPhoneNumber));
+
+    const readyToAdd = validItems.filter((v) => !existingSet.has(v.normalized));
+    const alreadyInGroupCount = existingSet.size;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalDetected,
+        validCount: validItems.length,
+        duplicateInPasteCount,
+        invalidCount: invalidItems.length,
+        alreadyInGroupCount,
+        readyToAddCount: readyToAdd.length,
+        preview: readyToAdd.slice(0, 50),
+        invalid: invalidItems.slice(0, 50),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/groups/:id/members
+ * Supports:
+ * A) Single student manual add: { phoneNumber, studentName? }
+ * B) Bulk numbers paste: { rawText } or { members: [{ phoneNumber, studentName? }] }
+ * C) Legacy candidate add: { candidateIds: [...] }
+ */
+export const addGroupMembers = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { phoneNumber, studentName, rawText, members, candidateIds } = req.body;
+
+    const query = mongoose.isValidObjectId(id) ? { _id: id } : { groupId: id };
+    const group = await VirtualGroup.findOne(query);
+    if (!group) {
+      res.status(404).json({ success: false, message: 'Virtual group not found' });
+      return;
+    }
+
+    // --- CASE 1: Single Student Manual Add ---
+    if (phoneNumber && typeof phoneNumber === 'string') {
+      const norm = normalizePhoneNumber(phoneNumber);
+      if (!norm.isValid) {
+        res.status(400).json({ success: false, message: norm.error || 'Invalid phone number format' });
+        return;
+      }
+
+      const existing = await GroupMembership.findOne({
         groupId: group._id,
-        candidateId: candidate._id,
+        normalizedPhoneNumber: norm.normalized,
       });
 
-      if (existingMembership) {
-        if (existingMembership.membershipStatus === 'Active') {
-          alreadyActiveCount++;
+      if (existing) {
+        if (existing.membershipStatus === 'Active') {
+          res.status(409).json({
+            success: false,
+            message: `Mobile number ${norm.normalized} is already present in this group`,
+          });
+          return;
         } else {
-          // Reactivate previously removed membership while preserving historical record
-          existingMembership.membershipStatus = 'Active';
-          existingMembership.assignedAt = new Date();
-          existingMembership.removedAt = undefined;
-          existingMembership.assignedBy = req.admin?._id;
-          await existingMembership.save();
-          reactivatedCount++;
-          addedCandidateNames.push(candidate.fullName);
+          // Reactivate
+          existing.membershipStatus = 'Active';
+          existing.phoneNumber = phoneNumber.trim();
+          if (studentName) existing.studentName = studentName.trim();
+          existing.assignedAt = new Date();
+          existing.removedAt = undefined;
+          existing.assignedBy = req.admin?._id;
+          await existing.save();
         }
       } else {
-        // Create new membership record
         await GroupMembership.create({
           groupId: group._id,
-          candidateId: candidate._id,
+          phoneNumber: phoneNumber.trim(),
+          normalizedPhoneNumber: norm.normalized,
+          studentName: studentName ? studentName.trim() : '',
+          consentStatus: 'OptedIn',
           membershipStatus: 'Active',
           assignedAt: new Date(),
           assignedBy: req.admin?._id,
         });
-        addedCount++;
-        addedCandidateNames.push(candidate.fullName);
       }
-    }
 
-    // Refresh live member count on group
-    const totalActive = await GroupMembership.countDocuments({
-      groupId: group._id,
-      membershipStatus: 'Active',
-    });
-    group.memberCount = totalActive;
-    await group.save();
-
-    const netAdded = addedCount + reactivatedCount;
-    if (netAdded > 0) {
-      const nameSummary =
-        addedCandidateNames.length <= 3
-          ? addedCandidateNames.join(', ')
-          : `${addedCandidateNames.slice(0, 2).join(', ')} and ${addedCandidateNames.length - 2} others`;
-
-      await GroupActivity.create({
+      const totalActive = await GroupMembership.countDocuments({
         groupId: group._id,
-        action: 'CANDIDATE_ADDED',
-        details: `Assigned ${netAdded} candidate(s) (${nameSummary}) by ${req.admin?.name || 'Admin'}`,
-        performedBy: req.admin?._id,
+        membershipStatus: 'Active',
       });
+      group.memberCount = totalActive;
+      await group.save();
+
+      res.status(201).json({
+        success: true,
+        message: `Mobile number ${norm.normalized} added to group successfully`,
+        data: {
+          groupId: group._id,
+          phoneNumber: phoneNumber.trim(),
+          normalizedPhoneNumber: norm.normalized,
+          studentName: studentName || '',
+          totalActiveMembers: totalActive,
+        },
+      });
+      return;
     }
 
-    res.status(200).json({
-      success: true,
-      message: `Assigned ${netAdded} candidates to ${group.groupName}`,
-      data: {
-        totalActiveMembers: totalActive,
-        newlyAdded: addedCount,
-        reactivated: reactivatedCount,
-        alreadyActive: alreadyActiveCount,
-      },
+    // --- CASE 2: Bulk Paste or Array of Numbers ---
+    if (rawText || (Array.isArray(members) && members.length > 0)) {
+      let itemsToProcess: Array<{ phone: string; name: string }> = [];
+
+      if (rawText && typeof rawText === 'string') {
+        const parsed = parseRawNumbers(rawText);
+        itemsToProcess = parsed.map((p) => ({ phone: p.phone, name: p.name }));
+      } else if (Array.isArray(members)) {
+        itemsToProcess = members.map((m) => ({
+          phone: m.phoneNumber || m.phone || '',
+          name: m.studentName || m.name || '',
+        }));
+      }
+
+      const seenInPaste = new Set<string>();
+      const validToInsert: Array<{
+        groupId: mongoose.Types.ObjectId;
+        phoneNumber: string;
+        normalizedPhoneNumber: string;
+        studentName: string;
+        consentStatus: 'OptedIn';
+        membershipStatus: 'Active';
+        assignedAt: Date;
+        assignedBy?: mongoose.Types.ObjectId;
+      }> = [];
+
+      for (const item of itemsToProcess) {
+        const norm = normalizePhoneNumber(item.phone);
+        if (!norm.isValid || seenInPaste.has(norm.normalized)) continue;
+        seenInPaste.add(norm.normalized);
+
+        validToInsert.push({
+          groupId: group._id as mongoose.Types.ObjectId,
+          phoneNumber: item.phone,
+          normalizedPhoneNumber: norm.normalized,
+          studentName: item.name,
+          consentStatus: 'OptedIn',
+          membershipStatus: 'Active',
+          assignedAt: new Date(),
+          assignedBy: req.admin?._id,
+        });
+      }
+
+      if (validToInsert.length === 0) {
+        res.status(400).json({ success: false, message: 'No valid phone numbers found in input' });
+        return;
+      }
+
+      // Check which are already active in group
+      const normalizedList = validToInsert.map((v) => v.normalizedPhoneNumber);
+      const existingMemberships = await GroupMembership.find({
+        groupId: group._id,
+        normalizedPhoneNumber: { $in: normalizedList },
+      });
+
+      const existingMap = new Map(existingMemberships.map((m) => [m.normalizedPhoneNumber, m]));
+      const newDocs: any[] = [];
+      let reactivatedCount = 0;
+
+      for (const doc of validToInsert) {
+        const existing = existingMap.get(doc.normalizedPhoneNumber);
+        if (existing) {
+          if (existing.membershipStatus !== 'Active') {
+            existing.membershipStatus = 'Active';
+            existing.assignedAt = new Date();
+            existing.removedAt = undefined;
+            if (doc.studentName) existing.studentName = doc.studentName;
+            await existing.save();
+            reactivatedCount++;
+          }
+        } else {
+          newDocs.push(doc);
+        }
+      }
+
+      if (newDocs.length > 0) {
+        await GroupMembership.insertMany(newDocs, { ordered: false });
+      }
+
+      const totalActive = await GroupMembership.countDocuments({
+        groupId: group._id,
+        membershipStatus: 'Active',
+      });
+      group.memberCount = totalActive;
+      await group.save();
+
+      const addedCount = newDocs.length + reactivatedCount;
+      const skippedCount = itemsToProcess.length - addedCount;
+
+      res.status(200).json({
+        success: true,
+        message: `Successfully added ${addedCount} student numbers to ${group.groupName}`,
+        data: {
+          addedCount,
+          skippedCount,
+          totalActiveMembers: totalActive,
+        },
+      });
+      return;
+    }
+
+    // --- CASE 3: Legacy candidateIds array ---
+    if (Array.isArray(candidateIds) && candidateIds.length > 0) {
+      let addedCount = 0;
+      let reactivatedCount = 0;
+      let alreadyActiveCount = 0;
+
+      for (const candId of candidateIds) {
+        const candidate = await Candidate.findById(candId);
+        if (!candidate) continue;
+
+        const norm = normalizePhoneNumber(candidate.phoneNumber);
+
+        const existingMembership = await GroupMembership.findOne({
+          groupId: group._id,
+          $or: [
+            { candidateId: candidate._id },
+            ...(norm.isValid ? [{ normalizedPhoneNumber: norm.normalized }] : []),
+          ],
+        });
+
+        if (existingMembership) {
+          if (existingMembership.membershipStatus === 'Active') {
+            alreadyActiveCount++;
+          } else {
+            existingMembership.membershipStatus = 'Active';
+            existingMembership.assignedAt = new Date();
+            existingMembership.removedAt = undefined;
+            await existingMembership.save();
+            reactivatedCount++;
+          }
+        } else {
+          await GroupMembership.create({
+            groupId: group._id,
+            candidateId: candidate._id,
+            phoneNumber: candidate.phoneNumber,
+            normalizedPhoneNumber: norm.isValid ? norm.normalized : candidate.phoneNumber,
+            studentName: candidate.fullName,
+            consentStatus: candidate.whatsappConsent ? 'OptedIn' : 'OptedOut',
+            membershipStatus: 'Active',
+            assignedAt: new Date(),
+            assignedBy: req.admin?._id,
+          });
+          addedCount++;
+        }
+      }
+
+      const totalActive = await GroupMembership.countDocuments({
+        groupId: group._id,
+        membershipStatus: 'Active',
+      });
+      group.memberCount = totalActive;
+      await group.save();
+
+      res.status(200).json({
+        success: true,
+        message: `Assigned ${addedCount + reactivatedCount} candidates to ${group.groupName}`,
+        data: {
+          totalActiveMembers: totalActive,
+          newlyAdded: addedCount,
+          reactivated: reactivatedCount,
+          alreadyActive: alreadyActiveCount,
+        },
+      });
+      return;
+    }
+
+    res.status(400).json({
+      success: false,
+      message: 'Please provide either phoneNumber, rawText of numbers, members array, or candidateIds',
     });
   } catch (error) {
     next(error);
@@ -461,7 +720,12 @@ export const getGroupMembers = async (
         ],
       }).select('_id');
 
-      membershipFilter.candidateId = { $in: matchingCandidates.map((c) => c._id) };
+      membershipFilter.$or = [
+        { studentName: searchRegex },
+        { phoneNumber: searchRegex },
+        { normalizedPhoneNumber: searchRegex },
+        { candidateId: { $in: matchingCandidates.map((c) => c._id) } },
+      ];
     }
 
     const [total, memberships] = await Promise.all([
@@ -498,7 +762,7 @@ export const getGroupMembers = async (
 
 /**
  * DELETE /api/groups/:id/members/:candidateId
- * Removes candidate from group while preserving historical record (status set to Removed)
+ * Removes candidate or student from group while preserving historical record (status set to Removed)
  */
 export const removeGroupMember = async (
   req: AuthenticatedRequest,
@@ -515,22 +779,26 @@ export const removeGroupMember = async (
       return;
     }
 
-    const candQuery = mongoose.isValidObjectId(candidateId)
-      ? { _id: candidateId }
-      : { candidateId: candidateId };
-    const candidate = await Candidate.findOne(candQuery);
-    if (!candidate) {
-      res.status(404).json({ success: false, message: 'Candidate not found' });
-      return;
+    let membership = null;
+    if (mongoose.isValidObjectId(candidateId)) {
+      membership = await GroupMembership.findOne({
+        groupId: group._id,
+        $or: [{ _id: candidateId }, { candidateId: candidateId }],
+      });
     }
 
-    const membership = await GroupMembership.findOne({
-      groupId: group._id,
-      candidateId: candidate._id,
-    });
+    if (!membership) {
+      const candidate = await Candidate.findOne({ candidateId });
+      if (candidate) {
+        membership = await GroupMembership.findOne({
+          groupId: group._id,
+          candidateId: candidate._id,
+        });
+      }
+    }
 
     if (!membership) {
-      res.status(404).json({ success: false, message: 'Candidate is not a member of this group' });
+      res.status(404).json({ success: false, message: 'Member not found in this group' });
       return;
     }
 
@@ -546,22 +814,82 @@ export const removeGroupMember = async (
     group.memberCount = activeCount;
     await group.save();
 
-    const reason = req.body?.reason || req.query?.reason;
-    await GroupActivity.create({
-      groupId: group._id,
-      action: 'CANDIDATE_REMOVED',
-      details: `Removed candidate ${candidate.fullName} (${candidate.candidateId}) from active group members${
-        reason ? `: ${reason}` : ''
-      }`,
-      performedBy: req.admin?._id,
-    });
+    const displayName = membership.studentName || membership.phoneNumber || 'Student';
 
     res.status(200).json({
       success: true,
-      message: `Candidate ${candidate.fullName} removed from ${group.groupName}`,
+      message: `Member ${displayName} removed from ${group.groupName}`,
       data: {
         totalActiveMembers: activeCount,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/groups/:id/members/:candidateId
+ * Updates student name or phone number
+ */
+export const updateGroupMember = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id, candidateId: memberId } = req.params;
+    const { studentName, phoneNumber } = req.body;
+
+    const group = await VirtualGroup.findById(id);
+    if (!group) {
+      res.status(404).json({ success: false, message: 'Group not found' });
+      return;
+    }
+
+    const membership = await GroupMembership.findOne({
+      _id: memberId,
+      groupId: group._id,
+    });
+
+    if (!membership) {
+      res.status(404).json({ success: false, message: 'Group member not found' });
+      return;
+    }
+
+    if (studentName !== undefined) {
+      membership.studentName = studentName.trim();
+    }
+
+    if (phoneNumber && phoneNumber.trim() && phoneNumber.trim() !== membership.phoneNumber) {
+      const norm = normalizePhoneNumber(phoneNumber);
+      if (!norm.isValid) {
+        res.status(400).json({ success: false, message: norm.error || 'Invalid phone number format' });
+        return;
+      }
+
+      const existing = await GroupMembership.findOne({
+        _id: { $ne: membership._id },
+        groupId: group._id,
+        normalizedPhoneNumber: norm.normalized,
+        membershipStatus: 'Active',
+      });
+
+      if (existing) {
+        res.status(409).json({ success: false, message: `Mobile number ${norm.normalized} is already present in this group` });
+        return;
+      }
+
+      membership.phoneNumber = phoneNumber.trim();
+      membership.normalizedPhoneNumber = norm.normalized;
+    }
+
+    await membership.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Student record updated successfully',
+      data: membership,
     });
   } catch (error) {
     next(error);

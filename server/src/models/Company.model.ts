@@ -53,10 +53,10 @@ const companySchema = new Schema<ICompany>(
   {
     companyId: {
       type: String,
-      required: [true, 'Company ID is required'],
       unique: true,
       trim: true,
       index: true,
+      default: () => 'COMP-' + Math.random().toString(36).substring(2, 8).toUpperCase() + '-' + Date.now().toString(36).toUpperCase(),
     },
     companyName: {
       type: String,
@@ -103,10 +103,9 @@ const companySchema = new Schema<ICompany>(
     // Job Information
     jobRole: {
       type: String,
-      required: [true, 'Job role is required'],
       trim: true,
       maxlength: [150, 'Job role cannot exceed 150 characters'],
-      index: true,
+      default: 'General',
     },
     jobDescription: {
       type: String,
@@ -116,7 +115,6 @@ const companySchema = new Schema<ICompany>(
     },
     requiredCandidates: {
       type: Number,
-      required: [true, 'Required candidates count is required'],
       min: [1, 'Must require at least 1 candidate'],
       default: 1,
     },

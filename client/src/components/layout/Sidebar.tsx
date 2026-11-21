@@ -2,27 +2,14 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Users,
   Building2,
   FolderTree,
-  UserCheck,
-  MessageSquare,
-  FileCode2,
-  BarChart3,
-  TrendingUp,
-  Settings,
-  GraduationCap,
+  Send,
+  Cloud,
   X,
   LogOut,
   User,
-  Cloud,
-  Inbox,
-  Server,
-  ShieldCheck,
-  Shield,
-  FileText,
-  Laptop,
-  Sliders,
+  MessageSquare,
 } from 'lucide-react';
 import { NavItem } from '../../types';
 import { cn } from '../../utils/cn';
@@ -35,24 +22,10 @@ interface SidebarProps {
 
 const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { title: 'Candidates', href: '/candidates', icon: Users },
   { title: 'Companies', href: '/companies', icon: Building2 },
-  { title: 'Virtual Groups', href: '/virtual-groups', icon: FolderTree },
-  { title: 'Contact Fetcher', href: '/contact-fetcher', icon: UserCheck },
-  { title: 'WhatsApp Messages', href: '/whatsapp-messages', icon: MessageSquare },
-  { title: 'Campaign Analytics', href: '/campaign-analytics', icon: TrendingUp },
-  { title: 'Message Templates', href: '/message-templates', icon: FileCode2 },
-  { title: 'Reports & Exports', href: '/reports', icon: BarChart3 },
-  { title: 'WhatsApp Cloud API', href: '/whatsapp-cloud-settings', icon: Cloud },
-  { title: 'Meta Templates', href: '/meta-templates', icon: FileCode2 },
-  { title: 'Inbound Inbox', href: '/inbound-messages', icon: Inbox },
-  { title: 'Webhook Events', href: '/webhook-events', icon: Server },
-  { title: 'Administrators', href: '/admins', icon: ShieldCheck },
-  { title: 'Roles & RBAC', href: '/roles', icon: Shield },
-  { title: 'Audit Trail', href: '/audit-logs', icon: FileText },
-  { title: 'Active Sessions', href: '/sessions', icon: Laptop },
-  { title: 'System Settings', href: '/system-settings', icon: Sliders },
-  { title: 'WhatsApp Settings', href: '/settings', icon: Settings },
+  { title: 'Groups', href: '/groups', icon: FolderTree },
+  { title: 'Send Message', href: '/send-message', icon: Send },
+  { title: 'WhatsApp Connection', href: '/whatsapp-connection', icon: Cloud },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
@@ -79,14 +52,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {/* Brand / Logo */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-xs">
-              <GraduationCap className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+              <MessageSquare className="w-5 h-5" />
             </div>
             <div>
               <h1 className="text-sm font-bold text-slate-900 tracking-tight leading-none">
-                PlacementAuto
+                WhatsApp Dispatch
               </h1>
-              <span className="text-[11px] font-medium text-slate-400">Admin Console</span>
+              <span className="text-[11px] font-medium text-slate-400">Bulk Messaging Console</span>
             </div>
           </div>
           <button

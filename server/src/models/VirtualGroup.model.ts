@@ -40,7 +40,6 @@ const virtualGroupSchema = new Schema<IVirtualGroup>(
       type: Schema.Types.ObjectId,
       ref: 'Company',
       required: [true, 'Company reference is required'],
-      unique: true, // One primary virtual group per company rule
       index: true,
     },
     memberCount: {
@@ -63,6 +62,9 @@ const virtualGroupSchema = new Schema<IVirtualGroup>(
   }
 );
 
+virtualGroupSchema.index({ companyId: 1, groupName: 1 });
 virtualGroupSchema.index({ groupName: 'text', description: 'text', groupId: 'text' });
 
 export const VirtualGroup = mongoose.model<IVirtualGroup>('VirtualGroup', virtualGroupSchema);
+export const Group = VirtualGroup;
+export type IGroup = IVirtualGroup;

@@ -6,8 +6,10 @@ import {
   updateGroup,
   deleteGroup,
   addGroupMembers,
+  previewBulkMembers,
   getGroupMembers,
   removeGroupMember,
+  updateGroupMember,
   getGroupStats,
   getOverallGroupStats,
   getEligibleCandidates,
@@ -31,8 +33,10 @@ router.put('/:id', updateGroup);
 router.delete('/:id', deleteGroup);
 
 // Membership routes
+router.post('/:id/members/preview', previewBulkMembers);
 router.post('/:id/members', addGroupMembers);
 router.get('/:id/members', getGroupMembers);
+router.put('/:id/members/:candidateId', updateGroupMember);
 router.delete('/:id/members/:candidateId', removeGroupMember);
 
 // Intelligence & Activity routes

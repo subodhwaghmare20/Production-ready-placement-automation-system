@@ -46,10 +46,24 @@ export interface HealthStatus {
 }
 
 export interface DashboardStats {
-  totalCandidates: number;
   totalCompanies: number;
-  activeVirtualGroups: number;
-  messagesSent: number;
+  totalGroups: number;
+  totalStudentNumbers: number;
+  totalMessagesSent: number;
+  recentCampaigns?: Array<{
+    _id: string;
+    campaignId?: string;
+    name?: string;
+    companyId?: { _id: string; companyName: string };
+    groupId?: { _id: string; groupName: string; memberCount?: number };
+    status: string;
+    metrics?: { totalRecipients?: number; processedRecipients?: number };
+    totalRecipients?: number;
+    createdAt: string;
+  }>;
+  totalCandidates?: number;
+  activeVirtualGroups?: number;
+  messagesSent?: number;
 }
 
 export type ExperienceType = 'Fresher' | 'Experienced';
@@ -151,6 +165,7 @@ export interface Company {
   _id: string;
   companyId: string;
   companyName: string;
+  groupsCount?: number;
   industry?: string;
   website?: string;
   companyDescription?: string;
@@ -276,7 +291,11 @@ export interface VirtualGroup {
 export interface GroupMembership {
   _id: string;
   groupId: string;
-  candidateId: Candidate;
+  candidateId?: Candidate;
+  phoneNumber?: string;
+  normalizedPhoneNumber?: string;
+  studentName?: string;
+  consentStatus?: 'OptedIn' | 'OptedOut' | 'Pending';
   membershipStatus: MembershipStatus;
   assignedAt: string;
   removedAt?: string;
@@ -628,7 +647,7 @@ export interface WhatsAppCampaign {
         _id: string;
         companyName: string;
         companyId: string;
-        jobRole: string;
+        jobRole?: string;
         industry?: string;
         website?: string;
         hrName?: string;
@@ -648,12 +667,18 @@ export interface WhatsAppCampaign {
     name: string;
     category: string;
   } | string;
-  messageTemplateContent: string;
+  messageTemplateContent?: string;
+  messageContent?: string;
+  totalRecipients?: number;
+  sentCount?: number;
+  deliveredCount?: number;
+  readCount?: number;
+  failedCount?: number;
   provider: 'PERSONAL_ASSISTED' | 'CLOUD_API';
   status: WhatsAppCampaignStatus;
   metrics: CampaignMetrics;
-  metadata: CampaignMetadata;
-  currentRecipientIndex: number;
+  metadata?: CampaignMetadata;
+  currentRecipientIndex?: number;
   startedAt?: string;
   completedAt?: string;
   createdBy?: {
@@ -668,10 +693,10 @@ export interface WhatsAppCampaign {
 export interface CampaignRecipient {
   _id: string;
   campaignId: string;
-  candidateId: {
+  candidateId?: {
     _id: string;
-    candidateId: string;
-    fullName: string;
+    candidateId?: string;
+    fullName?: string;
     collegeName?: string;
     degree?: string;
     branch?: string;
@@ -679,15 +704,21 @@ export interface CampaignRecipient {
     skills?: string[];
     email?: string;
     phoneNumber?: string;
-    placementStatus: PlacementStatus;
+    placementStatus?: PlacementStatus;
   } | string;
-  candidateName: string;
+  candidateName?: string;
   phoneNumber: string;
-  normalizedPhoneNumber: string;
-  personalizedMessage: string;
-  clickToChatUrl: string;
+  normalizedPhoneNumber?: string;
+  personalizedMessage?: string;
+  clickToChatUrl?: string;
   status: CampaignRecipientStatus;
-  queueOrder: number;
+  deliveryStatus?: string;
+  metaMessageId?: string;
+  errorMessage?: string;
+  sentAt?: string;
+  deliveredAt?: string;
+  readAt?: string;
+  queueOrder?: number;
   originalTemplateId?: string;
   originalTemplateContent?: string;
   personalizationStatus?: PersonalizationStatus;
@@ -703,7 +734,6 @@ export interface CampaignRecipient {
   skippedAt?: string;
   skipReason?: string;
   notes?: string;
-  // Module 9 Tracking additions
   preparedAt?: string;
   lastAttemptAt?: string;
   lastActionBy?: {

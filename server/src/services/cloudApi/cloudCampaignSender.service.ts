@@ -47,18 +47,27 @@ export class CloudCampaignSenderService {
       errors.push('WhatsApp Cloud API is not connected or in test mode. Please configure credentials first.');
     }
 
-    // 2. Verify Meta Template
+    // 2. Verify Meta Template if template message type
     let metaTemplate = null;
-    if (campaign.metaTemplateId) {
-      metaTemplate = await MetaTemplate.findById(campaign.metaTemplateId);
-    } else if (campaign.metaTemplateName) {
-      metaTemplate = await MetaTemplate.findOne({ name: campaign.metaTemplateName });
-    }
+    if (campaign.messageType !== 'TEXT') {
+      if (campaign.metaTemplateId) {
+        metaTemplate = await MetaTemplate.findById(campaign.metaTemplateId);
+      } else if (campaign.metaTemplateName) {
+        metaTemplate = await MetaTemplate.findOne({ name: campaign.metaTemplateName });
+      }
 
-    if (!metaTemplate) {
-      errors.push('No Meta Template associated with this Cloud API campaign');
-    } else if (metaTemplate.status !== 'APPROVED') {
-      errors.push(`Selected Meta template "${metaTemplate.name}" is not APPROVED (Current status: ${metaTemplate.status})`);
+      if (!metaTemplate) {
+        // Fallback to text if messageTemplateContent is present, else error
+        if (!campaign.messageTemplateContent) {
+          errors.push('No Meta Template or message text associated with this Cloud API campaign');
+        }
+      } else if (metaTemplate.status !== 'APPROVED') {
+        errors.push(`Selected Meta template "${metaTemplate.name}" is not APPROVED (Current status: ${metaTemplate.status})`);
+      }
+    } else {
+      if (!campaign.messageTemplateContent) {
+        errors.push('Message text is required for free-form text campaign');
+      }
     }
 
     // 3. Check Recipients
@@ -86,8 +95,8 @@ export class CloudCampaignSenderService {
         continue;
       }
 
-      // Check Candidate record for consent
-      const candidate = await Candidate.findById(recipient.candidateId);
+      // Check Candidate record for consent if candidateId exists
+      const candidate = recipient.candidateId ? await Candidate.findById(recipient.candidateId) : null;
       if (candidate && candidate.whatsappConsent === false) {
         noConsentCount++;
         continue;
@@ -146,16 +155,18 @@ export class CloudCampaignSenderService {
       isMockMode: cloudConfig.isMockMode,
     };
 
-    // Find Meta Template
+    // Find Meta Template if template message type
     let metaTemplate = null;
     if (campaign.metaTemplateId) {
       metaTemplate = await MetaTemplate.findById(campaign.metaTemplateId);
-    } else {
+    } else if (campaign.metaTemplateName) {
+      metaTemplate = await MetaTemplate.findOne({ name: campaign.metaTemplateName });
+    } else if (campaign.messageType !== 'TEXT') {
       metaTemplate = await MetaTemplate.findOne({ status: 'APPROVED' });
     }
 
-    if (!metaTemplate) {
-      throw new Error('No approved Meta Template available for sending');
+    if (campaign.messageType !== 'TEXT' && !metaTemplate && !campaign.messageTemplateContent) {
+      throw new Error('No approved Meta Template or message text available for sending');
     }
 
     // Update campaign status
@@ -201,7 +212,7 @@ export class CloudCampaignSenderService {
       }
 
       // Check consent
-      const candidate = await Candidate.findById(recipient.candidateId);
+      const candidate = recipient.candidateId ? await Candidate.findById(recipient.candidateId) : null;
       if (candidate && candidate.whatsappConsent === false) {
         recipient.isExcluded = true;
         recipient.exclusionReason = 'Candidate consent missing/revoked';
@@ -213,7 +224,7 @@ export class CloudCampaignSenderService {
 
       // Prepare body parameters according to template parameterMappings
       const bodyParameters: string[] = [];
-      if (metaTemplate.parameterMappings && metaTemplate.parameterMappings.length > 0) {
+      if (metaTemplate && metaTemplate.parameterMappings && metaTemplate.parameterMappings.length > 0) {
         for (const mapping of metaTemplate.parameterMappings) {
           let val = '';
           if (mapping.candidateField === 'fullName') {
@@ -238,13 +249,21 @@ export class CloudCampaignSenderService {
         bodyParameters.push(recipient.candidateName);
       }
 
-      // Send via Meta Graph API
-      const result = await metaGraphApiService.sendTemplateMessage(creds, {
-        to: recipient.normalizedPhoneNumber,
-        templateName: metaTemplate.name,
-        languageCode: metaTemplate.language,
-        bodyParameters,
-      });
+      // Send via Meta Graph API (Template or Free-Form Text)
+      let result;
+      if (campaign.messageType === 'TEXT' || !metaTemplate) {
+        result = await metaGraphApiService.sendTextMessage(creds, {
+          to: recipient.normalizedPhoneNumber,
+          text: recipient.personalizedMessage || campaign.messageTemplateContent,
+        });
+      } else {
+        result = await metaGraphApiService.sendTemplateMessage(creds, {
+          to: recipient.normalizedPhoneNumber,
+          templateName: metaTemplate.name,
+          languageCode: metaTemplate.language,
+          bodyParameters,
+        });
+      }
 
       if (result.success && result.providerMessageId) {
         recipient.provider = 'CLOUD_API';
@@ -257,7 +276,7 @@ export class CloudCampaignSenderService {
           action: 'CLOUD_API_DISPATCH',
           status: 'SENT_MANUALLY_CONFIRMED',
           timestamp: new Date(),
-          notes: `Sent via Meta Cloud API (${metaTemplate.name})`,
+          notes: `Sent via Meta Cloud API (${campaign.messageType === 'TEXT' ? 'Text Message' : metaTemplate?.name})`,
         });
         await recipient.save();
         dispatched++;

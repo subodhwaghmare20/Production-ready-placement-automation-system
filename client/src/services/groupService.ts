@@ -74,6 +74,50 @@ export const addGroupMembers = async (
   return response.data.data!;
 };
 
+export const addSingleStudent = async (
+  groupId: string,
+  data: { phoneNumber: string; studentName?: string }
+): Promise<any> => {
+  const response = await apiClient.post<ApiResponse<any>>(`/groups/${groupId}/members`, data);
+  return response.data.data;
+};
+
+export const previewBulkMembers = async (
+  groupId: string,
+  rawText: string
+): Promise<{
+  totalDetected: number;
+  validCount: number;
+  duplicateInPasteCount: number;
+  alreadyInGroupCount: number;
+  invalidCount: number;
+  items: Array<{
+    raw: string;
+    normalized: string | null;
+    name?: string;
+    status: 'VALID' | 'DUPLICATE_IN_PASTE' | 'ALREADY_IN_GROUP' | 'INVALID';
+    reason?: string;
+  }>;
+}> => {
+  const response = await apiClient.post<ApiResponse<any>>(`/groups/${groupId}/members/preview`, {
+    rawText,
+  });
+  return response.data.data!;
+};
+
+export const addBulkMembers = async (
+  groupId: string,
+  payload: { rawText?: string; members?: Array<{ phoneNumber: string; studentName?: string }> }
+): Promise<{
+  newlyAdded: number;
+  alreadyActive: number;
+  invalidCount: number;
+  totalActiveMembers: number;
+}> => {
+  const response = await apiClient.post<ApiResponse<any>>(`/groups/${groupId}/members`, payload);
+  return response.data.data!;
+};
+
 export const getGroupMembers = async (
   id: string,
   params: Record<string, any> = {}

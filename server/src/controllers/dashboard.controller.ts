@@ -1,15 +1,19 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
-import { Candidate } from '../models/Candidate.model';
 import { Company } from '../models/Company.model';
 import { VirtualGroup } from '../models/VirtualGroup.model';
-import { Message } from '../models/Message.model';
+import { GroupMembership } from '../models/GroupMembership.model';
+import { Campaign } from '../models/Campaign.model';
 import { CampaignRecipient } from '../models/CampaignRecipient.model';
 
 /**
  * GET /api/dashboard/stats
- * Aggregates real-time statistics from MongoDB collections.
- * Protected with authMiddleware.
+ * Aggregates real-time statistics for simplified bulk WhatsApp messaging platform:
+ * - Total Companies
+ * - Total Groups
+ * - Total Student Numbers
+ * - Total Messages Sent
+ * - Recent Campaigns
  */
 export const getDashboardStats = async (
   _req: AuthenticatedRequest,
@@ -18,28 +22,39 @@ export const getDashboardStats = async (
 ): Promise<void> => {
   try {
     const [
-      totalCandidates,
       totalCompanies,
-      activeVirtualGroups,
-      legacyMessages,
-      campaignConfirmedMessages,
+      totalGroups,
+      activeMemberships,
+      distinctPhones,
+      cloudMessagesSent,
+      manualMessagesSent,
+      recentCampaigns,
     ] = await Promise.all([
-      Candidate.countDocuments(),
       Company.countDocuments(),
-      VirtualGroup.countDocuments({ status: 'active' }),
-      Message.countDocuments({ status: { $in: ['sent', 'delivered'] } }),
+      VirtualGroup.countDocuments(),
+      GroupMembership.countDocuments({ membershipStatus: 'Active' }),
+      GroupMembership.distinct('normalizedPhoneNumber', { membershipStatus: 'Active' }),
+      CampaignRecipient.countDocuments({ providerStatus: { $in: ['SENT', 'DELIVERED', 'READ'] } }),
       CampaignRecipient.countDocuments({ status: 'SENT_MANUALLY_CONFIRMED' }),
+      Campaign.find()
+        .populate('companyId', 'companyName')
+        .populate('groupId', 'groupName memberCount')
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
     ]);
 
-    const messagesSent = legacyMessages + campaignConfirmedMessages;
+    const totalStudentNumbers = distinctPhones.length || activeMemberships;
+    const totalMessagesSent = Math.max(cloudMessagesSent, manualMessagesSent);
 
     res.status(200).json({
       success: true,
       data: {
-        totalCandidates,
         totalCompanies,
-        activeVirtualGroups,
-        messagesSent,
+        totalGroups,
+        totalStudentNumbers,
+        totalMessagesSent,
+        recentCampaigns,
       },
     });
   } catch (error) {
