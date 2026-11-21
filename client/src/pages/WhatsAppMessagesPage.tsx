@@ -75,44 +75,44 @@ export const WhatsAppMessagesPage: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
               WhatsApp Messaging Engine
             </h1>
             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
               Personal WhatsApp Assisted
             </span>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Compliant, personal WhatsApp assisted candidate communication with prefilled click-to-chat links.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <Link
             to="/campaign-analytics"
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-2xs"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-2xs min-h-[38px] flex-1 sm:flex-initial"
           >
             <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
             Analytics
           </Link>
           <Link
             to="/recipient-tracking"
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-2xs"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-2xs min-h-[38px] flex-1 sm:flex-initial"
           >
             <UserCheck className="w-3.5 h-3.5 text-indigo-600" />
             Recipients
           </Link>
           <Link
             to="/message-templates"
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-2xs"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-2xs min-h-[38px] flex-1 sm:flex-initial"
           >
             <FileCode2 className="w-3.5 h-3.5 text-slate-500" />
             Templates
           </Link>
           <Link
             to="/whatsapp-messages/create"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-xs transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors min-h-[38px] w-full sm:w-auto"
           >
             <Plus className="w-4 h-4" />
             Create Campaign
@@ -120,43 +120,45 @@ export const WhatsAppMessagesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Module 9 Sub-Navigation Bar */}
-      <div className="flex items-center gap-1 border-b border-slate-200 text-xs">
-        <Link
-          to="/whatsapp-messages"
-          className="px-4 py-2.5 font-bold text-slate-900 border-b-2 border-slate-900 flex items-center gap-1.5"
-        >
-          <MessageSquare className="w-3.5 h-3.5" />
-          Campaigns
-        </Link>
-        <Link
-          to="/campaign-analytics"
-          className="px-4 py-2.5 font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-1.5 transition-colors"
-        >
-          <BarChart3 className="w-3.5 h-3.5 text-blue-500" />
-          Analytics & Trends
-        </Link>
-        <Link
-          to="/recipient-tracking"
-          className="px-4 py-2.5 font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-1.5 transition-colors"
-        >
-          <UserCheck className="w-3.5 h-3.5 text-indigo-500" />
-          Recipient Tracking
-        </Link>
-        <Link
-          to="/campaign-comparison"
-          className="px-4 py-2.5 font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-1.5 transition-colors"
-        >
-          <Layers className="w-3.5 h-3.5 text-purple-500" />
-          Compare Campaigns
-        </Link>
-        <Link
-          to="/reports"
-          className="px-4 py-2.5 font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-1.5 transition-colors"
-        >
-          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
-          Audit Reports
-        </Link>
+      {/* Module 9 Sub-Navigation Bar with Horizontal Touch Scrolling */}
+      <div className="border-b border-slate-200 overflow-x-auto no-scrollbar -mx-3 sm:mx-0 px-3 sm:px-0">
+        <div className="flex items-center gap-1 text-xs whitespace-nowrap min-w-max pb-0.5">
+          <Link
+            to="/whatsapp-messages"
+            className="px-3.5 py-2.5 font-bold text-slate-900 border-b-2 border-slate-900 flex items-center gap-1.5"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            Campaigns
+          </Link>
+          <Link
+            to="/campaign-analytics"
+            className="px-3.5 py-2.5 font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-1.5 transition-colors"
+          >
+            <BarChart3 className="w-3.5 h-3.5 text-blue-500" />
+            Analytics & Trends
+          </Link>
+          <Link
+            to="/recipient-tracking"
+            className="px-3.5 py-2.5 font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-1.5 transition-colors"
+          >
+            <UserCheck className="w-3.5 h-3.5 text-indigo-500" />
+            Recipient Tracking
+          </Link>
+          <Link
+            to="/campaign-comparison"
+            className="px-3.5 py-2.5 font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-1.5 transition-colors"
+          >
+            <Layers className="w-3.5 h-3.5 text-purple-500" />
+            Compare Campaigns
+          </Link>
+          <Link
+            to="/reports"
+            className="px-3.5 py-2.5 font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent flex items-center gap-1.5 transition-colors"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+            Audit Reports
+          </Link>
+        </div>
       </div>
 
       {/* Mode Compliance Notice */}
@@ -273,8 +275,8 @@ export const WhatsAppMessagesPage: React.FC = () => {
             description="Create your first campaign to begin assisted personal WhatsApp candidate outreach."
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="w-full text-left text-xs border-collapse min-w-[720px]">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500 font-medium bg-slate-50/50">
                   <th className="py-3 px-4">Campaign & Target</th>

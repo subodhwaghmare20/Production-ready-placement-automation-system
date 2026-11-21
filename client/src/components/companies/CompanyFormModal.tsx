@@ -239,8 +239,8 @@ export const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-xl max-w-4xl w-full p-6 shadow-2xl border border-slate-200 my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
+      <div className="bg-white rounded-xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-slate-200 my-2 sm:my-8 max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-3rem)] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div>
@@ -747,19 +747,19 @@ export const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
           </div>
 
           {/* Form Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 min-h-[44px]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-sm disabled:opacity-50 min-h-[44px]"
             >
               {isSaving ? (
                 <>

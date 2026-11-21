@@ -59,31 +59,31 @@ export const DashboardPage: React.FC = () => {
       {/* Top Welcome Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <div className="flex items-center flex-wrap gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
               Welcome back, {user?.name || 'Admin'}
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
               Authenticated
             </span>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Real-time placement drive metrics and candidate automation status.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center flex-wrap gap-2 self-start sm:self-auto">
           <button
             onClick={fetchStats}
             title="Refresh database metrics"
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-xs text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-xs text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors min-h-[36px]"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loadingStats ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </button>
 
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-xs text-xs">
-            <Activity className="w-4 h-4 text-slate-500" />
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-xs text-xs min-h-[36px]">
+            <Activity className="w-4 h-4 text-slate-500 shrink-0" />
             <span className="text-slate-600 font-medium">API:</span>
             {loadingHealth ? (
               <span className="text-slate-400">Checking...</span>
@@ -160,8 +160,8 @@ export const DashboardPage: React.FC = () => {
       {/* Overview & Security Architecture Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Authenticated Session Card */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
             <div>
               <h2 className="text-base font-semibold text-slate-900">
                 Active Admin Session Profile
@@ -170,7 +170,7 @@ export const DashboardPage: React.FC = () => {
                 Verified via HttpOnly JWT Cookie & Anti-CSRF Token
               </p>
             </div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 self-start sm:self-auto shrink-0">
               <ShieldCheck className="w-3.5 h-3.5" />
               Session Verified
             </span>

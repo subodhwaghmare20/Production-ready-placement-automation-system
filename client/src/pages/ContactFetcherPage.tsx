@@ -34,19 +34,19 @@ export const ContactFetcherPage: React.FC = () => {
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2.5">
-            <UserCheck className="w-6 h-6 text-indigo-600" />
-            Contact Fetcher & Candidate Assignment Engine
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2.5 flex-wrap">
+            <UserCheck className="w-6 h-6 text-indigo-600 shrink-0" />
+            <span>Contact Fetcher & Candidate Assignment Engine</span>
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Centralized applicant sourcing from spreadsheets, database queries, and raw contact paste with criteria matching.
           </p>
         </div>
       </div>
 
       {/* Main Tab Navigation */}
-      <div className="border-b border-slate-200 bg-white px-4 rounded-xl border shadow-xs">
-        <nav className="flex space-x-6 overflow-x-auto">
+      <div className="border-b border-slate-200 bg-white px-2 sm:px-4 rounded-xl border shadow-xs overflow-x-auto no-scrollbar -mx-2 sm:mx-0">
+        <nav className="flex space-x-4 sm:space-x-6 overflow-x-auto no-scrollbar min-w-max pb-px">
           <button
             onClick={() => setActiveTab('excel-csv')}
             className={`py-3.5 text-xs font-bold border-b-2 flex items-center gap-2 whitespace-nowrap transition-colors ${

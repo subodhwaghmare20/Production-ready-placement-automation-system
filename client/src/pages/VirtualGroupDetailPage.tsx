@@ -390,8 +390,8 @@ export const VirtualGroupDetailPage: React.FC = () => {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="border-b border-slate-200">
-        <nav className="flex space-x-6">
+      <div className="border-b border-slate-200 overflow-x-auto no-scrollbar -mx-3 sm:mx-0 px-3 sm:px-0">
+        <nav className="flex space-x-4 sm:space-x-6 min-w-max">
           <button
             onClick={() => setActiveTab('overview')}
             className={`pb-3 text-sm font-semibold border-b-2 flex items-center gap-2 transition-colors ${

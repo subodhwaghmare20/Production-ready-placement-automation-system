@@ -22,7 +22,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   return (
     <div
       className={cn(
-        'bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:border-slate-300 transition-all duration-200',
+        'bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm hover:border-slate-300 transition-all duration-200',
         className
       )}
     >

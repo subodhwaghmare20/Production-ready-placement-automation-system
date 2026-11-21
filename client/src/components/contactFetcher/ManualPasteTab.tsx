@@ -196,7 +196,7 @@ export const ManualPasteTab: React.FC<ManualPasteTabProps> = ({
       {validationResult && (
         <div className="space-y-4">
           {/* KPI Summary Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             <div className="p-3 bg-white border border-slate-200 rounded-lg">
               <span className="text-[11px] font-semibold uppercase text-slate-400 block">Total Extracted</span>
               <span className="text-xl font-bold text-slate-900">{validationResult.totalParsed}</span>

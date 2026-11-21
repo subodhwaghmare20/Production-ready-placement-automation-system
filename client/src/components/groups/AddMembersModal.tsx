@@ -106,8 +106,8 @@ export const AddMembersModal: React.FC<AddMembersModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-      <div className="bg-white rounded-xl max-w-4xl w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/50 backdrop-blur-xs">
+      <div className="bg-white rounded-xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-slate-200 max-h-[calc(100dvh-1.5rem)] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2.5">

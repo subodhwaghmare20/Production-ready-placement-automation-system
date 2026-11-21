@@ -228,8 +228,8 @@ export const VirtualGroupsPage: React.FC = () => {
             onAction={() => (window.location.href = '/virtual-groups/create')}
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-600 border-collapse">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="w-full min-w-[720px] text-left text-sm text-slate-600 border-collapse">
               <thead className="bg-slate-50/80 text-xs font-semibold uppercase text-slate-500 border-b border-slate-200 tracking-wider">
                 <tr>
                   <th className="py-3.5 px-4">Group Identifier</th>

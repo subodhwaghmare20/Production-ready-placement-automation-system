@@ -347,7 +347,7 @@ export const CampaignProcessingPage: React.FC = () => {
             </div>
 
             {/* Action Bar */}
-            <div className="p-6 bg-white flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="p-4 sm:p-6 bg-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
               <div className="text-xs text-slate-500">
                 <span className="font-semibold text-slate-800 block">
                   Step 1: Open chat link in WhatsApp Web/Desktop.
@@ -355,12 +355,12 @@ export const CampaignProcessingPage: React.FC = () => {
                 <span>Step 2: Press Send in WhatsApp, then click Confirm below.</span>
               </div>
 
-              <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                 {/* 1-Click WhatsApp Trigger */}
                 <button
                   type="button"
                   onClick={handleOpenChat}
-                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors min-h-[44px] w-full sm:w-auto"
                 >
                   <ExternalLink className="w-4 h-4 text-emerald-400" />
                   <span>Open Chat in WhatsApp</span>
@@ -371,7 +371,7 @@ export const CampaignProcessingPage: React.FC = () => {
                   type="button"
                   disabled={actionLoading}
                   onClick={handleConfirmSent}
-                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors min-h-[44px] w-full sm:w-auto"
                 >
                   {actionLoading ? (
                     <LoadingSpinner size="sm" />

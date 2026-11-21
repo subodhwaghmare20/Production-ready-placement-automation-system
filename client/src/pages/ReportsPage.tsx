@@ -207,10 +207,10 @@ export const ReportsPage: React.FC = () => {
             </div>
 
             {/* Download Buttons Bar */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
-              <span className="text-[11px] text-slate-400 font-medium">Export Format:</span>
+            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+              <span className="text-[11px] text-slate-400 font-medium shrink-0">Export Format:</span>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 {/* Excel Button */}
                 <button
                   onClick={() => handleDownload(rep.id, 'xlsx')}

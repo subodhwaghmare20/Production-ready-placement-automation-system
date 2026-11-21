@@ -206,7 +206,7 @@ export const RolePermissionMatrixPage: React.FC = () => {
 
       {/* Role Selection Tabs */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
           {roles.map((r) => {
             const isSelected = selectedRole?._id === r._id;
             const isSuper = r.slug === 'superadmin';

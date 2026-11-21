@@ -251,11 +251,11 @@ export const WhatsAppCloudSettingsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
           <button
             type="button"
             onClick={() => setShowWizard(!showWizard)}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition min-h-[40px]"
           >
             <HelpCircle className="w-4 h-4 text-blue-600" />
             {showWizard ? 'Hide Setup Wizard' : '12-Step Setup Wizard'}
@@ -264,7 +264,7 @@ export const WhatsAppCloudSettingsPage: React.FC = () => {
             type="button"
             onClick={handleTestConnection}
             disabled={testing}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition disabled:opacity-50 min-h-[40px]"
           >
             <RefreshCw className={`w-4 h-4 ${testing ? 'animate-spin' : ''}`} />
             {testing ? 'Testing Connection...' : 'Test Connection'}
@@ -372,7 +372,7 @@ export const WhatsAppCloudSettingsPage: React.FC = () => {
       {/* Setup Wizard (Collapsible) */}
       {showWizard && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-          <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
             <div>
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <HelpCircle className="w-5 h-5 text-blue-600" />
@@ -502,7 +502,7 @@ export const WhatsAppCloudSettingsPage: React.FC = () => {
 
       {/* Main Credentials Form */}
       <form onSubmit={handleSaveSettings} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
-        <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
           <div>
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-slate-700" />

@@ -344,8 +344,8 @@ export const AuditLogsPage: React.FC = () => {
             <p className="text-xs text-slate-400 mt-1">Try broadening your search query or date range filters.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-sm">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="w-full min-w-[760px] text-left border-collapse text-sm">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   <th className="py-3 px-4">Date & Time</th>
